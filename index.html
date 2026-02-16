@@ -2,99 +2,118 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Печать этикеток - Станция оператора</title>
+    <title>Станция маркировки деталей</title>
     <style>
-        /* Стили для экрана моноблока */
-        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 20px; }
-        h1 { text-align: center; color: #333; }
+        body { font-family: 'Segoe UI', sans-serif; background: #2c3e50; color: white; margin: 0; padding: 20px; overflow-x: hidden; }
+        h1 { text-align: center; font-size: 28px; text-transform: uppercase; letter-spacing: 2px; }
         
-        .container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        /* Стили панели управления */
+        .controls { background: #34495e; padding: 20px; border-radius: 10px; margin-bottom: 20px; display: flex; justify-content: center; gap: 20px; border-bottom: 4px solid #27ae60; }
+        input[type="file"] { display: none; }
+        .btn-import { background: #27ae60; padding: 15px 30px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 18px; transition: 0.3s; }
+        .btn-import:hover { background: #2ecc71; }
+
+        /* Сетка кнопок деталей */
+        .container { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
         
-        .item-card {
-            background: white; border: 2px solid #ddd; border-radius: 12px;
-            padding: 20px; text-align: center; cursor: pointer;
-            transition: transform 0.1s, background 0.2s;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        .detail-card {
+            background: #ecf0f1; color: #2c3e50; border-radius: 12px; padding: 25px;
+            text-align: center; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            border: none; outline: none; transition: 0.1s;
         }
+        .detail-card:active { transform: scale(0.92); background: #bdc3c7; }
+        .detail-card h2 { margin: 0; font-size: 24px; color: #2980b9; }
+        .detail-card p { margin: 10px 0 0 0; font-size: 20px; font-weight: bold; }
+        .detail-card span { display: block; margin-top: 10px; color: #7f8c8d; font-size: 14px; }
 
-        .item-card:active { transform: scale(0.95); background: #e0f7fa; }
-
-        .item-card h2 { margin: 0 0 10px 0; font-size: 22px; color: #007bff; }
-        .item-card p { margin: 5px 0; font-size: 18px; font-weight: bold; }
-
-        /* СТИЛИ ДЛЯ ПЕЧАТИ (То, что пойдет на принтер) */
+        /* Настройки печати */
         @media print {
-            body * { visibility: hidden; } /* Прячем всё лишнее */
-            #print-area, #print-area * { visibility: visible; } /* Показываем только зону печати */
-            #print-area {
-                position: absolute; left: 0; top: 0; width: 58mm; /* Ширина кассовой ленты */
-                font-size: 14pt; line-height: 1.2; text-align: center;
-            }
-            @page { margin: 0; }
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { position: absolute; left: 0; top: 0; width: 100%; text-align: center; color: black; }
+            .no-print { display: none; }
         }
-
-        #print-area { visibility: hidden; position: absolute; }
+        #print-area { display: none; }
     </style>
 </head>
 <body>
 
-    <h1>Список деталей на резку</h1>
-    
+    <h1>Управление нарезкой и этикетками</h1>
+
+    <div class="controls no-print">
+        <label for="file-upload" class="btn-import">📥 ИМПОРТИРОВАТЬ СПИСОК (JSON/CSV)</label>
+        <input type="file" id="file-upload" accept=".json,.csv" onchange="importData(event)">
+    </div>
+
     <div class="container" id="items-list">
-        </div>
+        <p style="text-align: center; grid-column: 1/-1; font-size: 20px; opacity: 0.5;">Список пуст. Загрузите файл из GitLab.</p>
+    </div>
 
     <div id="print-area">
-        <div style="border-bottom: 1px dashed #000; padding-bottom: 5px; margin-bottom: 5px;">
-            <b>ЦЕХ МЕТАЛЛОКОНСТРУКЦИЙ</b>
-        </div>
+        <div style="font-size: 14pt; border-bottom: 1px solid #000; margin-bottom: 10px;">ЭТИКЕТКА ДЕТАЛИ</div>
         <div id="print-content"></div>
-        <div style="margin-top: 10px; font-size: 10pt;">
-            Дата: <span id="print-date"></span>
-        </div>
     </div>
 
     <script>
-        // ДАННЫЕ (В реальности этот массив можно подгружать из внешнего JSON файла)
-        const details = [
-            { id: "101", name: "Рама ПВХ", size: "1450x1450", order: "№554" },
-            { id: "102", name: "Створка Z", size: "750x1380", order: "№554" },
-            { id: "103", name: "Импост 80", size: "1320", order: "№556" },
-            { id: "104", name: "Штапик левый", size: "1400", order: "№558" },
-            { id: "105", name: "Усилитель", size: "2100", order: "№560" }
-        ];
+        // Функция импорта файла
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
 
-        const listContainer = document.getElementById('items-list');
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const content = e.target.result;
+                    let data = [];
 
-        // Отрисовка кнопок
-        details.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'item-card';
-            card.innerHTML = `
-                <h2>${item.name}</h2>
-                <p>Размер: ${item.size}</p>
-                <p style="color: #666;">Заказ: ${item.order}</p>
-            `;
-            card.onclick = () => printItem(item);
-            listContainer.appendChild(card);
-        });
+                    if (file.name.endsWith('.json')) {
+                        data = JSON.parse(content);
+                    } else {
+                        // Простая логика для CSV
+                        const lines = content.split('\n');
+                        const headers = lines[0].split(',');
+                        for (let i = 1; i < lines.length; i++) {
+                            const cols = lines[i].split(',');
+                            if (cols.length === headers.length) {
+                                data.push({ name: cols[0], size: cols[1], order: cols[2] });
+                            }
+                        }
+                    }
+                    renderButtons(data);
+                } catch (err) {
+                    alert("Ошибка в формате файла!");
+                }
+            };
+            reader.readAsText(file);
+        }
 
-        // Функция печати
-        function printItem(item) {
+        // Отрисовка кнопок на экране
+        function renderButtons(items) {
+            const container = document.getElementById('items-list');
+            container.innerHTML = ''; // Очистить старое
+
+            items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'detail-card';
+                card.innerHTML = `
+                    <h2>${item.name}</h2>
+                    <p>${item.size} мм</p>
+                    <span>Заказ: ${item.order}</span>
+                `;
+                card.onclick = () => sendToPrint(item);
+                container.appendChild(card);
+            });
+        }
+
+        // Функция вывода на чек
+        function sendToPrint(item) {
             const printContent = document.getElementById('print-content');
-            const printDate = document.getElementById('print-date');
-            
-            // Заполняем шаблон чека данными
             printContent.innerHTML = `
-                <div style="font-size: 18pt; font-weight: bold;">${item.name}</div>
-                <div style="font-size: 24pt; margin: 10px 0;">${item.size}</div>
-                <div>Заказ: ${item.order}</div>
-                <div style="margin-top:5px;">ID: ${item.id}</div>
+                <div style="font-size: 22pt; font-weight: bold;">${item.name}</div>
+                <div style="font-size: 30pt; margin: 15px 0;">${item.size}</div>
+                <div style="font-size: 16pt;">Заказ: ${item.order}</div>
+                <div style="margin-top: 10px;">--------------------------</div>
             `;
-            
-            printDate.innerText = new Date().toLocaleString();
-
-            // Вызываем печать
             window.print();
         }
     </script>
