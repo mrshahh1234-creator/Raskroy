@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Печать этикеток - Станция оператора</title>
+    <style>
+        /* Стили для экрана моноблока */
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 20px; }
+        h1 { text-align: center; color: #333; }
+        
+        .container { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        
+        .item-card {
+            background: white; border: 2px solid #ddd; border-radius: 12px;
+            padding: 20px; text-align: center; cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .item-card:active { transform: scale(0.95); background: #e0f7fa; }
+
+        .item-card h2 { margin: 0 0 10px 0; font-size: 22px; color: #007bff; }
+        .item-card p { margin: 5px 0; font-size: 18px; font-weight: bold; }
+
+        /* СТИЛИ ДЛЯ ПЕЧАТИ (То, что пойдет на принтер) */
+        @media print {
+            body * { visibility: hidden; } /* Прячем всё лишнее */
+            #print-area, #print-area * { visibility: visible; } /* Показываем только зону печати */
+            #print-area {
+                position: absolute; left: 0; top: 0; width: 58mm; /* Ширина кассовой ленты */
+                font-size: 14pt; line-height: 1.2; text-align: center;
+            }
+            @page { margin: 0; }
+        }
+
+        #print-area { visibility: hidden; position: absolute; }
+    </style>
+</head>
+<body>
+
+    <h1>Список деталей на резку</h1>
+    
+    <div class="container" id="items-list">
+        </div>
+
+    <div id="print-area">
+        <div style="border-bottom: 1px dashed #000; padding-bottom: 5px; margin-bottom: 5px;">
+            <b>ЦЕХ МЕТАЛЛОКОНСТРУКЦИЙ</b>
+        </div>
+        <div id="print-content"></div>
+        <div style="margin-top: 10px; font-size: 10pt;">
+            Дата: <span id="print-date"></span>
+        </div>
+    </div>
+
+    <script>
+        // ДАННЫЕ (В реальности этот массив можно подгружать из внешнего JSON файла)
+        const details = [
+            { id: "101", name: "Рама ПВХ", size: "1450x1450", order: "№554" },
+            { id: "102", name: "Створка Z", size: "750x1380", order: "№554" },
+            { id: "103", name: "Импост 80", size: "1320", order: "№556" },
+            { id: "104", name: "Штапик левый", size: "1400", order: "№558" },
+            { id: "105", name: "Усилитель", size: "2100", order: "№560" }
+        ];
+
+        const listContainer = document.getElementById('items-list');
+
+        // Отрисовка кнопок
+        details.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'item-card';
+            card.innerHTML = `
+                <h2>${item.name}</h2>
+                <p>Размер: ${item.size}</p>
+                <p style="color: #666;">Заказ: ${item.order}</p>
+            `;
+            card.onclick = () => printItem(item);
+            listContainer.appendChild(card);
+        });
+
+        // Функция печати
+        function printItem(item) {
+            const printContent = document.getElementById('print-content');
+            const printDate = document.getElementById('print-date');
+            
+            // Заполняем шаблон чека данными
+            printContent.innerHTML = `
+                <div style="font-size: 18pt; font-weight: bold;">${item.name}</div>
+                <div style="font-size: 24pt; margin: 10px 0;">${item.size}</div>
+                <div>Заказ: ${item.order}</div>
+                <div style="margin-top:5px;">ID: ${item.id}</div>
+            `;
+            
+            printDate.innerText = new Date().toLocaleString();
+
+            // Вызываем печать
+            window.print();
+        }
+    </script>
+</body>
+</html>
