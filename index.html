@@ -2,130 +2,161 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Оператор: Раскрой GibLab</title>
+    <title>GibLab: Очередь печати</title>
     <style>
-        body { font-family: sans-serif; background: #1a1a1a; color: white; margin: 0; display: flex; flex-direction: column; height: 100vh; }
-        .header { background: #333; padding: 10px 20px; display: flex; align-items: center; gap: 20px; border-bottom: 2px solid #ed1c24; }
-        .btn-load { background: #ed1c24; color: white; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 4px; }
-        .canvas-area { flex: 1; position: relative; overflow: auto; display: flex; justify-content: center; align-items: center; padding: 20px; }
-        canvas { background: white; box-shadow: 0 0 20px rgba(0,0,0,0.5); border: 1px solid #999; }
+        :root { --bg: #121212; --card: #1e1e1e; --accent: #e74c3c; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #fff; margin: 0; display: flex; flex-direction: column; height: 100vh; }
         
-        /* Чек для печати */
-        #print-zone { display: none; }
+        .header { background: #252525; padding: 15px 25px; display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--accent); }
+        .btn-load { background: var(--accent); color: white; border: none; padding: 12px 25px; cursor: pointer; font-weight: bold; border-radius: 5px; }
+        
+        /* Сетка деталей */
+        .queue-container { 
+            flex: 1; 
+            padding: 20px; 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); 
+            gap: 15px; 
+            align-content: start;
+            overflow-y: auto; 
+        }
+
+        /* Карточка детали */
+        .part-card { 
+            background: var(--card); 
+            border: 1px solid #333; 
+            padding: 20px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            transition: transform 0.2s, background 0.2s;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .part-card:hover { background: #2a2a2a; transform: translateY(-3px); border-color: var(--accent); }
+        .part-card:active { transform: scale(0.95); }
+
+        .part-name { font-size: 14px; color: #aaa; margin-bottom: 8px; text-align: center; }
+        .part-size { font-size: 28px; font-weight: bold; color: #fff; }
+        .part-mat { font-size: 12px; color: #666; margin-top: 10px; }
+
+        /* Номер в очереди */
+        .part-badge { position: absolute; top: 10px; left: 10px; background: #333; padding: 2px 8px; border-radius: 10px; font-size: 10px; }
+
+        /* Этикетка для принтера */
+        #label-print { display: none; }
         @media print {
             body * { display: none; }
-            #print-zone { display: block !important; width: 58mm; color: black; text-align: center; }
-            .b-name { font-size: 16pt; font-weight: bold; }
-            .b-info { font-size: 12pt; margin: 5px 0; }
+            #label-print { 
+                display: block !important; 
+                color: black; 
+                width: 58mm; 
+                text-align: center; 
+                padding: 5mm; 
+                font-family: Arial; 
+            }
+            .p-size { font-size: 22pt; font-weight: bold; }
         }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <div style="font-size: 20px; font-weight: bold;">GibLab Monitor</div>
-    <input type="file" id="loader" style="display:none" accept=".json,.js">
-    <button class="btn-load" onclick="document.getElementById('loader').click()">ЗАГРУЗИТЬ ФАЙЛ ЭКСПОРТА</button>
-    <div id="file-info">Файл не выбран</div>
+    <div style="font-size: 22px; font-weight: bold;">GIBLAB <span style="color:var(--accent)">QUEUE</span></div>
+    <div>
+        <input type="file" id="fileInput" style="display:none" accept=".project">
+        <button class="btn-load" onclick="document.getElementById('fileInput').click()">ЗАГРУЗИТЬ ЗАКАЗ</button>
+    </div>
+    <div id="counter">Деталей: 0</div>
 </div>
 
-<div class="canvas-area">
-    <canvas id="view"></canvas>
-</div>
+<div class="queue-container" id="queue">
+    </div>
 
-<div id="print-zone">
-    <div class="b-name" id="label-name">Деталь</div>
-    <div class="b-info" id="label-size">000 x 000</div>
-    <div class="b-info" id="label-mat">Материал</div>
-    <div style="font-family: 'Code39'; font-size: 30px;">|||||||||||||</div>
+<div id="label-print">
+    <div id="lbl-name" style="font-size: 12pt;">Наименование</div>
+    <div id="lbl-size" class="p-size">000 x 000</div>
+    <div id="lbl-mat" style="font-size: 9pt; margin-top: 5px;">Материал</div>
+    <div style="margin-top: 10px; font-size: 8pt; border-top: 1px solid #000; padding-top: 5px;">GibLab Export System</div>
 </div>
 
 <script>
-    const canvas = document.getElementById('view');
-    const ctx = canvas.getContext('2d');
-    let parts = [];
-    let scale = 0.35; // Коэффициент масштаба
+    let partsQueue = [];
 
-    // Чтение файла
-    document.getElementById('loader').addEventListener('change', function(e) {
+    document.getElementById('fileInput').onchange = function(e) {
         const file = e.target.files[0];
         if (!file) return;
-        document.getElementById('file-info').innerText = file.name;
 
         const reader = new FileReader();
         reader.onload = function(event) {
             try {
-                // Если скрипт Базиса выдает чистый JSON
                 const data = JSON.parse(event.target.result);
-                processData(data);
+                parseData(data);
             } catch (err) {
-                alert("Ошибка чтения: убедитесь, что это JSON файл");
+                alert("Ошибка в файле .project");
             }
         };
         reader.readAsText(file);
-    });
+    };
 
-    function processData(data) {
-        // Логика под ваш скрипт: ищем массив деталей
-        // Если ваш скрипт упаковывает их в opCutSheets -> parts
-        if (data.opCutSheets && data.opCutSheets[0].parts) {
-            parts = data.opCutSheets[0].parts;
-        } else if (Array.isArray(data)) {
-            parts = data;
+    function parseData(data) {
+        partsQueue = [];
+        if (data.opCutSheets) {
+            data.opCutSheets.forEach(sheet => {
+                sheet.parts.forEach(p => {
+                    partsQueue.push({
+                        id: Math.random().toString(36).substr(2, 9),
+                        name: p.Name || "Без названия",
+                        w: Math.round(p.Width || 0),
+                        h: Math.round(p.Height || 0),
+                        mat: sheet.MaterialName || "ЛДСП"
+                    });
+                });
+            });
         }
-
-        renderMap();
+        renderQueue();
     }
 
-    function renderMap() {
-        // Установка размера плиты из конфига (например 2750x1830)
-        canvas.width = 2750 * scale;
-        canvas.height = 1830 * scale;
+    function renderQueue() {
+        const container = document.getElementById('queue');
+        const counter = document.getElementById('counter');
+        container.innerHTML = '';
+        counter.innerText = `Осталось: ${partsQueue.length}`;
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        parts.forEach(p => {
-            // Рисуем деталь. ВАЖНО:PosX и PosY должны быть в вашем файле
-            const x = (p.PosX || 0) * scale;
-            const y = (p.PosY || 0) * scale;
-            const w = (p.W || p.Width || 0) * scale;
-            const h = (p.H || p.Height || 0) * scale;
-
-            ctx.fillStyle = p.printed ? "#2ecc71" : "#3498db";
-            ctx.fillRect(x, y, w, h);
-            ctx.strokeStyle = "white";
-            ctx.lineWidth = 1;
-            ctx.strokeRect(x, y, w, h);
-
-            if (w > 30) {
-                ctx.fillStyle = "white";
-                ctx.font = "10px Arial";
-                ctx.fillText(p.Name || "Деталь", x + 5, y + 15);
-            }
+        partsQueue.forEach((part, index) => {
+            const card = document.createElement('div');
+            card.className = 'part-card';
+            card.innerHTML = `
+                <div class="part-badge">${index + 1}</div>
+                <div class="part-name">${part.name}</div>
+                <div class="part-size">${part.w} × ${part.h}</div>
+                <div class="part-mat">${part.mat}</div>
+            `;
+            card.onclick = () => processPart(index);
+            container.appendChild(card);
         });
     }
 
-    // Клик по холсту
-    canvas.addEventListener('click', function(e) {
-        const rect = canvas.getBoundingClientRect();
-        const mx = (e.clientX - rect.left) / scale;
-        const my = (e.clientY - rect.top) / scale;
+    function processPart(index) {
+        const part = partsQueue[index];
+        
+        // 1. Подготовка этикетки
+        document.getElementById('lbl-name').innerText = part.name;
+        document.getElementById('lbl-size').innerText = `${part.w} × ${part.h}`;
+        document.getElementById('lbl-mat').innerText = part.mat;
 
-        parts.forEach(p => {
-            if (mx >= p.PosX && mx <= (p.PosX + p.W) && my >= p.PosY && my <= (p.PosY + p.H)) {
-                p.printed = true;
-                printItem(p);
-                renderMap();
-            }
-        });
-    });
-
-    function printItem(p) {
-        document.getElementById('label-name').innerText = p.Name || "Деталь";
-        document.getElementById('label-size').innerText = `${Math.round(p.W)} x ${Math.round(p.H)}`;
-        document.getElementById('label-mat').innerText = p.Material || "";
+        // 2. Печать
         window.print();
+
+        // 3. Удаление из очереди
+        partsQueue.splice(index, 1);
+
+        // 4. Перерисовка (следующая деталь займет место)
+        renderQueue();
     }
 </script>
+
 </body>
 </html>
