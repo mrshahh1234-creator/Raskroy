@@ -2,59 +2,76 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>GibLab Web Professional Clone</title>
+    <title>GibLab Web PRO | Nanxing ND510S Edition</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
     <style>
-        :root { --main-blue: #2c3e50; --accent: #3498db; --border: #bdc3c7; }
-        body { margin: 0; font-family: 'Segoe UI', Arial; display: flex; height: 100vh; background: #ecf0f1; }
+        :root { --nx-blue: #0054a6; --nx-red: #e30613; --bg: #f0f2f5; }
+        body { margin: 0; font-family: 'Segoe UI', Arial; display: flex; height: 100vh; background: var(--bg); }
         
-        /* Панель инструментов */
-        .toolbar { width: 220px; background: var(--main-blue); color: white; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
-        .toolbar h2 { font-size: 18px; border-bottom: 1px solid #555; padding-bottom: 10px; }
-        .btn { background: var(--accent); border: none; color: white; padding: 10px; cursor: pointer; border-radius: 4px; transition: 0.3s; }
-        .btn:hover { background: #2980b9; }
-
-        /* Рабочая область */
-        .workspace { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        /* Панель управления */
+        .sidebar { width: 220px; background: #2c3e50; color: white; padding: 15px; display: flex; flex-direction: column; box-shadow: 2px 0 10px rgba(0,0,0,0.3); }
+        .logo-area { text-align: center; margin-bottom: 25px; padding: 10px; background: white; border-radius: 5px; }
+        .logo-text { color: var(--nx-blue); font-weight: bold; font-size: 20px; }
+        .logo-sub { color: var(--nx-red); font-size: 10px; letter-spacing: 2px; }
         
-        /* Таблица деталей */
-        .parts-manager { height: 45%; background: white; border-bottom: 2px solid var(--border); overflow-y: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { background: #f8f9fa; position: sticky; top: 0; border: 1px solid var(--border); padding: 8px; }
-        td { border: 1px solid var(--border); padding: 5px; text-align: center; }
-        .edge-input { width: 30px; font-weight: bold; border: 1px solid #ddd; }
+        .btn { background: var(--nx-blue); border: none; color: white; padding: 12px; margin: 5px 0; cursor: pointer; border-radius: 4px; font-weight: bold; transition: 0.2s; }
+        .btn:hover { background: #003d7a; transform: translateX(5px); }
+        .btn-green { background: #27ae60; }
 
-        /* Визуализация раскроя */
-        .nesting-view { flex: 1; background: #cfd8dc; display: flex; flex-direction: column; position: relative; }
-        .info-bar { background: #fff; padding: 5px 20px; font-size: 12px; display: flex; gap: 30px; border-bottom: 1px solid #aaa; }
-        .canvas-container { flex: 1; display: flex; justify-content: center; align-items: center; overflow: auto; padding: 10px; }
-        canvas { background: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.2); }
+        /* Контент */
+        .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .tabs { background: #ddd; display: flex; padding: 5px 5px 0; border-bottom: 1px solid #bbb; }
+        .tab { padding: 10px 25px; cursor: pointer; background: #ccc; margin-right: 5px; border-radius: 5px 5px 0 0; }
+        .tab.active { background: white; font-weight: bold; border-bottom: 2px solid var(--nx-blue); }
 
-        /* Цвета для материалов */
-        .wood-texture { background-color: #deb887 !important; }
+        .content-section { flex: 1; overflow-y: auto; background: white; padding: 15px; display: none; }
+        .content-section.active { display: block; }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f8f9fa; border: 1px solid #ddd; padding: 10px; position: sticky; top: 0; }
+        td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+
+        /* Этикетка Nanxing ND510S */
+        .label-grid { display: grid; grid-template-columns: repeat(auto-fill, 80mm); gap: 10px; padding: 10px; }
+        .label-card { 
+            width: 80mm; height: 50mm; border: 1px solid #000; padding: 8px; 
+            background: #fff; position: relative; overflow: hidden; box-sizing: border-box; 
+        }
+        .label-nx-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #000; padding-bottom: 3px; }
+        .label-body { margin-top: 5px; }
+        .label-title { font-size: 14px; font-weight: bold; color: #000; }
+        .label-dims { font-size: 22px; font-weight: 800; margin: 5px 0; }
+        .label-footer { font-size: 10px; position: absolute; bottom: 5px; left: 8px; }
+        .qr-box { position: absolute; bottom: 5px; right: 5px; width: 65px; height: 65px; }
+
+        canvas { background: #fff; border: 1px solid #333; }
     </style>
 </head>
 <body>
 
-<div class="toolbar">
-    <h2>GibLab Web v1.0</h2>
-    <label>Лист ДСП (Ш х В):</label>
-    <input type="number" id="sheetW" value="2800">
-    <input type="number" id="sheetH" value="2070">
+<div class="sidebar">
+    <div class="logo-area">
+        <div class="logo-text">NANXING</div>
+        <div class="logo-sub">EQUIPMENT</div>
+    </div>
+    <div style="font-size: 11px; text-align: center; margin-bottom: 20px;">Model: ND510S (6-Side Boring)</div>
     
-    <label>Толщина фрезы (мм):</label>
-    <input type="number" id="kerf" value="4">
-    
-    <label>Отступ края (мм):</label>
-    <input type="number" id="margin" value="10">
-
     <button class="btn" onclick="addPart()">+ Добавить деталь</button>
-    <button class="btn" onclick="runNesting()" style="background: #27ae60;">РАССЧИТАТЬ</button>
-    <hr>
-    <button class="btn" onclick="exportGCode()" style="background: #e67e22;">Экспорт G-Code</button>
+    <button class="btn btn-green" onclick="runNesting()">РАССЧИТАТЬ КАРТУ</button>
+    <button class="btn" onclick="exportSawXML()" style="background: #e67e22;">ЭКСПОРТ (SAW)</button>
+    <button class="btn" onclick="switchTab('labels')">ПЕЧАТЬ ЭТИКЕТОК</button>
 </div>
 
-<div class="workspace">
-    <div class="parts-manager">
+<div class="main">
+    <div class="tabs">
+        <div id="t-parts" class="tab active" onclick="switchTab('parts')">Список деталей</div>
+        <div id="t-map" class="tab" onclick="switchTab('map')">Карта раскроя</div>
+        <div id="t-labels" class="tab" onclick="switchTab('labels')">Этикетки (ND510S)</div>
+    </div>
+
+    <div id="sec-parts" class="content-section active">
         <table>
             <thead>
                 <tr>
@@ -63,147 +80,116 @@
                     <th>Длина (L)</th>
                     <th>Ширина (W)</th>
                     <th>Кол-во</th>
-                    <th>Текстура</th>
-                    <th>Кромка (Т-Б-Л-П)</th>
-                    <th>Действие</th>
+                    <th>Кромка</th>
+                    <th>Присадка (Файл)</th>
                 </tr>
             </thead>
-            <tbody id="partsBody">
-                </tbody>
+            <tbody id="partsTableBody"></tbody>
         </table>
     </div>
 
-    <div class="nesting-view">
-        <div class="info-bar">
-            <span id="statEfficiency">Эффективность: 0%</span>
-            <span id="statParts">Размещено: 0/0</span>
-            <span id="statWaste">Отходы: 0 м²</span>
-        </div>
-        <div class="canvas-container">
-            <canvas id="nestingCanvas"></canvas>
-        </div>
+    <div id="sec-map" class="content-section" style="text-align: center; background: #555;">
+        <canvas id="nestCanvas"></canvas>
+    </div>
+
+    <div id="sec-labels" class="content-section">
+        <div class="label-grid" id="labelsContainer"></div>
     </div>
 </div>
 
 <script>
-    let partsList = [
-        { name: "Бок левый", l: 700, w: 500, count: 2, rotate: true, edges: [1,1,0,0] },
-        { name: "Дно", l: 800, w: 500, count: 1, rotate: true, edges: [0,0,1,1] },
-        { name: "Полка", l: 768, w: 480, count: 4, rotate: true, edges: [1,0,0,0] }
+    let parts = [
+        { id: "P001", name: "Бок Шкафа Левый", l: 2100, w: 580, count: 2, edge: "2.0x19", prg: "BOK_L.ban" },
+        { id: "P002", name: "Горизонт Низ", l: 800, w: 580, count: 1, edge: "0.4x19", prg: "GOR_N.ban" },
+        { id: "P003", name: "Полка Внутр", l: 768, w: 550, count: 4, edge: "1.0x19", prg: "POLKA.ban" }
     ];
 
-    function addPart() {
-        partsList.push({ name: "Новая деталь", l: 400, w: 300, count: 1, rotate: true, edges: [0,0,0,0] });
-        renderTable();
-    }
-
     function renderTable() {
-        const tbody = document.getElementById('partsBody');
-        tbody.innerHTML = '';
-        partsList.forEach((p, i) => {
-            tbody.innerHTML += `
-                <tr>
-                    <td>${i+1}</td>
-                    <td><input type="text" value="${p.name}" onchange="partsList[${i}].name=this.value"></td>
-                    <td><input type="number" value="${p.l}" onchange="partsList[${i}].l=Number(this.value)"></td>
-                    <td><input type="number" value="${p.w}" onchange="partsList[${i}].w=Number(this.value)"></td>
-                    <td><input type="number" value="${p.count}" onchange="partsList[${i}].count=Number(this.value)"></td>
-                    <td><input type="checkbox" ${p.rotate ? 'checked' : ''} onchange="partsList[${i}].rotate=this.checked"></td>
-                    <td>
-                        <input class="edge-input" type="text" value="${p.edges.join('')}" onchange="partsList[${i}].edges=this.value.split('').map(Number)">
-                    </td>
-                    <td><button onclick="partsList.splice(${i},1); renderTable()">❌</button></td>
-                </tr>
-            `;
+        const body = document.getElementById('partsTableBody');
+        body.innerHTML = '';
+        parts.forEach((p, i) => {
+            body.innerHTML += `<tr>
+                <td>${p.id}</td>
+                <td><input type="text" value="${p.name}" onchange="parts[${i}].name=this.value"></td>
+                <td><input type="number" value="${p.l}" onchange="parts[${i}].l=this.value"></td>
+                <td><input type="number" value="${p.w}" onchange="parts[${i}].w=this.value"></td>
+                <td><input type="number" value="${p.count}" onchange="parts[${i}].count=this.value"></td>
+                <td>${p.edge}</td>
+                <td><input type="text" value="${p.prg}" onchange="parts[${i}].prg=this.value"></td>
+            </tr>`;
         });
     }
 
-    // Алгоритм MaxRects (Упрощенный для веба)
+    function switchTab(target) {
+        document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('sec-' + target).classList.add('active');
+        document.getElementById('t-' + target).classList.add('active');
+        if(target === 'labels') generateLabels();
+    }
+
     function runNesting() {
-        const sw = Number(document.getElementById('sheetW').value);
-        const sh = Number(document.getElementById('sheetH').value);
-        const kerf = Number(document.getElementById('kerf').value);
-        const margin = Number(document.getElementById('margin').value);
-        
-        const canvas = document.getElementById('nestingCanvas');
+        const canvas = document.getElementById('nestCanvas');
         const ctx = canvas.getContext('2d');
-        const scale = Math.min(1000/sw, 600/sh);
+        canvas.width = 900; canvas.height = 600;
+        ctx.fillStyle = "white"; ctx.fillRect(0,0,900,600);
         
-        canvas.width = sw * scale;
-        canvas.height = sh * scale;
-        
-        let placedRects = [];
-        let freeRects = [{ x: margin, y: margin, w: sw - 2*margin, h: sh - 2*margin }];
-
-        // Подготовка списка всех единичных деталей
-        let flatParts = [];
-        partsList.forEach(p => {
-            for(let i=0; i<p.count; i++) flatParts.push({...p});
+        // Визуализация раскроя
+        let curX = 10;
+        parts.forEach((p, i) => {
+            ctx.fillStyle = "#ffa500";
+            ctx.fillRect(curX, 10, p.l*0.1, p.w*0.1);
+            ctx.strokeRect(curX, 10, p.l*0.1, p.w*0.1);
+            curX += (p.l*0.1) + 5;
         });
+        switchTab('map');
+    }
 
-        // Сортировка по площади (Best Area Fit)
-        flatParts.sort((a, b) => (b.l * b.w) - (a.l * a.h));
-
-        flatParts.forEach(part => {
-            for (let i = 0; i < freeRects.length; i++) {
-                let free = freeRects[i];
-                let pw = part.l, ph = part.w;
-
-                // Проверка с вращением (если разрешено текстурой)
-                if (pw <= free.w && ph <= free.h) {
-                    place(free, pw, ph, i);
-                    break;
-                } else if (part.rotate && ph <= free.w && pw <= free.h) {
-                    place(free, ph, pw, i);
-                    break;
-                }
+    function generateLabels() {
+        const container = document.getElementById('labelsContainer');
+        container.innerHTML = '';
+        
+        parts.forEach((p, idx) => {
+            for(let i=0; i < p.count; i++) {
+                const labelId = `qr-${idx}-${i}`;
+                const card = document.createElement('div');
+                card.className = 'label-card';
+                card.innerHTML = `
+                    <div class="label-nx-header">
+                        <span style="color:#0054a6; font-weight:bold;">NANXING ND510S</span>
+                        <span style="font-size:9px;">Part: ${idx+1}/${p.count}</span>
+                    </div>
+                    <div class="label-body">
+                        <div class="label-title">${p.name}</div>
+                        <div class="label-dims">${p.l} x ${p.w}</div>
+                        <div style="font-size:10px;">Кромка: ${p.edge}</div>
+                    </div>
+                    <div class="label-footer">
+                        Заказ: #786-AMIR<br>Программа: <b>${p.prg}</b>
+                    </div>
+                    <div class="qr-box" id="${labelId}"></div>
+                `;
+                container.appendChild(card);
+                
+                new QRCode(document.getElementById(labelId), {
+                    text: `ND510S|PROGRAMS|${p.prg}`,
+                    width: 60, height: 60,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
             }
         });
-
-        function place(free, pw, ph, index) {
-            const rect = { x: free.x, y: free.y, w: pw, h: ph };
-            placedRects.push(rect);
-            
-            // Разделение пространства (алгоритм Гильотины)
-            let remainingW = free.w - pw - kerf;
-            let remainingH = free.h - ph - kerf;
-
-            freeRects.splice(index, 1);
-            if (remainingW > 0) freeRects.push({ x: free.x + pw + kerf, y: free.y, w: remainingW, h: ph });
-            if (remainingH > 0) freeRects.push({ x: free.x, y: free.y + ph + kerf, w: free.w, h: remainingH });
-            
-            freeRects.sort((a, b) => (a.y === b.y) ? a.x - b.x : a.y - b.y);
-        }
-
-        // Отрисовка
-        ctx.fillStyle = "#fff";
-        ctx.fillRect(0,0, canvas.width, canvas.height);
-
-        placedRects.forEach((r, idx) => {
-            ctx.fillStyle = "#e67e22";
-            ctx.strokeStyle = "#2c3e50";
-            ctx.lineWidth = 1;
-            ctx.fillRect(r.x * scale, r.y * scale, r.w * scale, r.h * scale);
-            ctx.strokeRect(r.x * scale, r.y * scale, r.w * scale, r.h * scale);
-            
-            ctx.fillStyle = "white";
-            ctx.font = `${10 * scale * 5}px Arial`;
-            ctx.fillText(`${r.w}x${r.h}`, (r.x + 5)*scale, (r.y + 20)*scale);
-        });
-
-        // Обновление статистики
-        let usedArea = placedRects.reduce((acc, r) => acc + (r.w * r.h), 0);
-        let totalArea = sw * sh;
-        document.getElementById('statEfficiency').innerText = `Эффективность: ${((usedArea/totalArea)*100).toFixed(2)}%`;
-        document.getElementById('statParts').innerText = `Размещено: ${placedRects.length}/${flatParts.length}`;
     }
 
-    // Базовый постпроцессор G-Code
-    function exportGCode() {
-        let gcode = "G21\nG90\nM3 S12000\n";
-        // Логика перебора placedRects и запись координат...
-        alert("G-Code сформирован и готов к отправке на станок!");
-        console.log(gcode);
+    function exportSawXML() {
+        let xml = `<?xml version="1.0" encoding="UTF-8"?><NanxingProject>`;
+        parts.forEach(p => {
+            xml += `<Detail Name="${p.name}" L="${p.l}" W="${p.w}" Qty="${p.count}" CNC="${p.prg}"/>`;
+        });
+        xml += `</NanxingProject>`;
+        const blob = new Blob([xml], {type: "text/xml"});
+        saveAs(blob, "nanxing_project.xml");
     }
 
     renderTable();
