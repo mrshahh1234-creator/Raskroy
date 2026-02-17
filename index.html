@@ -2,181 +2,96 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mustafayev Academy | Production Control</title>
+    <title>Mustafayev Academy Control</title>
     <style>
-        :root { 
-            --accent: #2ecc71; 
-            --accent-dark: #27ae60;
-            --bg: #0f1215; 
-            --card-bg: #1c2227; 
-            --text-main: #e0e6ed;
-            --text-dim: #94a3b8;
-        }
-
-        body { 
-            font-family: 'Inter', 'Segoe UI', Roboto, sans-serif; 
-            background: var(--bg); 
-            color: var(--text-main); 
-            margin: 0; 
-            display: flex; 
-            flex-direction: column; 
-            height: 100vh; 
-        }
-
-        /* Header Area */
-        .header { 
-            background: rgba(26, 32, 39, 0.95); 
-            backdrop-filter: blur(10px);
-            padding: 15px 30px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: space-between; 
-            border-bottom: 2px solid var(--accent);
-            z-index: 100;
-        }
-
-        .logo-group { display: flex; align-items: center; gap: 12px; }
-        .logo-icon { background: var(--accent); color: #000; padding: 5px 8px; border-radius: 6px; font-weight: 900; }
-        .logo-text { font-size: 18px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; }
-        .logo-text span { color: var(--accent); }
-
-        .btn-load { 
-            background: var(--accent); 
-            color: #0d1117; 
-            border: none; 
-            padding: 12px 24px; 
-            font-size: 14px;
-            font-weight: 700; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .btn-load:hover { background: #fff; transform: translateY(-2px); box-shadow: 0 4px 15px rgba(46, 204, 113, 0.4); }
-
-        /* Dashboard Statistics */
-        .stats-bar { padding: 10px 30px; background: #161b22; font-size: 13px; color: var(--text-dim); display: flex; gap: 20px; border-bottom: 1px solid #30363d; }
-        .stat-item b { color: var(--accent); }
-
-        /* Grid */
-        .main-view { flex: 1; padding: 25px; overflow-y: auto; scroll-behavior: smooth; }
-        .grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); 
-            gap: 20px; 
-        }
-
-        /* Industrial Card Design */
-        .card { 
-            background: var(--card-bg); 
-            border: 1px solid #30363d; 
-            border-radius: 12px; 
-            padding: 20px; 
-            cursor: pointer; 
-            position: relative; 
-            transition: 0.2s;
-            overflow: hidden;
-        }
-        .card:hover { 
-            border-color: var(--accent); 
-            background: #212830;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-        }
-        .card::before {
-            content: ""; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: transparent; transition: 0.2s;
-        }
-        .card:hover::before { background: var(--accent); }
-
-        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
-        .p-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
-        .p-name { font-size: 15px; font-weight: 600; color: #fff; line-height: 1.4; margin-top: 4px; }
-        .p-size { font-size: 34px; font-weight: 800; color: var(--text-main); margin: 10px 0; font-variant-numeric: tabular-nums; }
+        :root { --accent: #2ecc71; --bg: #0f1215; --card-bg: #1c2227; --text: #e0e6ed; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        .badge-container { display: flex; gap: 8px; margin-top: 15px; }
-        .badge { font-size: 10px; padding: 4px 8px; border-radius: 4px; background: #2d333b; color: #adbac7; font-weight: bold; }
-        .badge.active { background: rgba(46, 204, 113, 0.15); color: var(--accent); border: 1px solid rgba(46, 204, 113, 0.3); }
-
-        /* Print Template (Hidden) */
-        #print-area { display: none; }
-
-        @media print {
-            body * { display: none !important; }
-            #print-area { 
-                display: block !important; 
-                width: 58mm; 
-                margin: 0; 
-                padding: 4mm; 
-                color: #000 !important; 
-                background: #fff !important;
-                font-family: 'Arial', sans-serif;
-            }
-            .pr-title { font-size: 12pt; font-weight: 900; text-align: center; border-bottom: 2pt solid #000; padding-bottom: 3px; margin-bottom: 5px; }
-            .pr-row { font-size: 8pt; margin: 2px 0; }
-            .pr-name { font-size: 11pt; font-weight: bold; margin: 5px 0; line-height: 1.2; }
-            .size-box { 
-                border: 2pt solid #eee; margin: 8px 0; padding: 8px; text-align: center; font-size: 26pt; font-weight: bold; 
-                position: relative;
-            }
-            /* Visual Edge Banding on Label */
-            .e-t { border-top: 6pt solid #000 !important; }
-            .e-b { border-bottom: 6pt solid #000 !important; }
-            .e-l { border-left: 6pt solid #000 !important; }
-            .e-r { border-right: 6pt solid #000 !important; }
-
-            .pr-footer { display: flex; justify-content: space-between; border-top: 1pt solid #000; padding-top: 5px; margin-top: 5px; font-size: 9pt; font-weight: bold; }
+        /* Интерфейс сайта */
+        .header { background: #1a1a1a; padding: 15px 25px; display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--accent); }
+        .logo { font-size: 20px; font-weight: bold; letter-spacing: 1px; }
+        .logo span { color: var(--accent); }
+        .btn-load { background: var(--accent); color: #000; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 6px; }
+        
+        .main-container { flex: 1; padding: 20px; overflow-y: auto; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+        
+        .card { 
+            background: var(--card-bg); border: 1px solid #333; border-radius: 12px; padding: 15px; 
+            cursor: pointer; position: relative; transition: 0.3s;
         }
+        .card:hover { border-color: var(--accent); transform: translateY(-3px); background: #252b33; }
+        .p-name { font-size: 14px; color: #888; margin-bottom: 5px; }
+        .p-size { font-size: 32px; font-weight: bold; }
+        .status-icons { position: absolute; top: 15px; right: 15px; font-size: 20px; }
+
+        /* НАСТРОЙКА ПЕЧАТИ (58мм термопринтер) */
+        @media print {
+            @page { margin: 0; }
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { 
+                position: absolute; left: 0; top: 0; width: 58mm; 
+                padding: 2mm; color: #000 !important; background: #fff !important;
+            }
+            .pr-header { font-size: 10pt; font-weight: bold; border-bottom: 1pt solid #000; text-align: center; margin-bottom: 2mm; padding-bottom: 1mm;}
+            .pr-info { font-size: 7pt; margin-bottom: 1mm; line-height: 1.1; }
+            .pr-part-name { font-size: 10pt; font-weight: bold; margin: 1mm 0; }
+            
+            /* Визуальный бокс детали с кромкой */
+            .size-box { 
+                border: 1pt solid #ccc; margin: 2mm 0; padding: 3mm 0; 
+                text-align: center; font-size: 24pt; font-weight: bold; position: relative;
+            }
+            .e-t { border-top: 5pt solid #000 !important; }
+            .e-b { border-bottom: 5pt solid #000 !important; }
+            .e-l { border-left: 5pt solid #000 !important; }
+            .e-r { border-right: 5pt solid #000 !important; }
+
+            .pr-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 2mm; border-top: 0.5pt solid #000; padding-top: 1mm; }
+            .pr-edge-text { font-size: 7pt; font-weight: normal; max-width: 70%; }
+            .pr-tech { font-size: 14pt; }
+        }
+        
+        #print-area { display: none; } /* Скрыто в браузере */
     </style>
 </head>
 <body>
 
 <div class="header">
-    <div class="logo-group">
-        <div class="logo-icon">M</div>
-        <div class="logo-text">Mustafayev <span>Academy</span></div>
-    </div>
-    <div style="display: flex; gap: 15px;">
+    <div class="logo">MUSTAFAYEV <span>ACADEMY</span></div>
+    <div style="display: flex; gap: 15px; align-items: center;">
+        <div id="stats" style="font-size: 13px;">Загрузите файл проекта</div>
         <input type="file" id="fileInput" style="display:none" accept=".project">
-        <button class="btn-load" onclick="document.getElementById('fileInput').click()">
-            <span>📂</span> ЗАГРУЗИТЬ ПРОЕКТ
-        </button>
+        <button class="btn-load" onclick="document.getElementById('fileInput').click()">ОТКРЫТЬ ПРОЕКТ</button>
     </div>
 </div>
 
-<div class="stats-bar" id="stats-bar">
-    <div class="stat-item">Проект: <b id="stat-proj">Нет данных</b></div>
-    <div class="stat-item">Материал: <b id="stat-mat">Нет данных</b></div>
-    <div class="stat-item">Очередь: <b id="stat-count">0 шт.</b></div>
-</div>
-
-<div class="main-view">
-    <div id="grid" class="grid">
-        </div>
+<div class="main-container">
+    <div id="grid" class="grid"></div>
 </div>
 
 <div id="print-area">
-    <div class="pr-title">MUSTAFAYEV ACADEMY</div>
-    <div class="pr-row" style="font-style: italic" id="p-proj-name">Проект</div>
-    <div class="pr-name" id="p-part-name">Наименование детали</div>
-    <div class="pr-row" id="p-mat-name">Материал</div>
+    <div class="pr-header">Mustafayev Academy</div>
+    <div class="pr-info" id="p-project">Проект: -</div>
+    <div class="pr-part-name" id="p-name">Наименование детали</div>
+    <div class="pr-info" id="p-material">Материал: -</div>
     
-    <div id="p-size-box" class="size-box">
-        <span id="p-dims">0 x 0</span>
+    <div id="p-box" class="size-box">
+        <span id="p-size-val">0 x 0</span>
     </div>
 
     <div class="pr-footer">
-        <div id="p-icons"></div>
-        <div id="p-edge-label" style="font-size: 7pt; text-align: right;"></div>
+        <div class="pr-edge-text" id="p-edge-val">Кромка: -</div>
+        <div class="pr-tech" id="p-icons"></div>
     </div>
 </div>
 
 <script>
     let queue = [];
-    let projectTitle = "";
-    let mainMaterial = "";
-    let edgeMaterial = "";
+    let currentProject = "";
+    let currentMaterial = "";
+    let currentEdge = "";
 
     document.getElementById('fileInput').onchange = function(e) {
         const file = e.target.files[0];
@@ -187,35 +102,36 @@
             const parser = new DOMParser();
             const xml = parser.parseFromString(ev.target.result, "text/xml");
             
-            projectTitle = xml.querySelector("good[typeId='product']")?.getAttribute("name") || "Новый заказ";
-            mainMaterial = xml.querySelector("good[typeId='sheet']")?.getAttribute("name") || "ЛДСП";
-            edgeMaterial = xml.querySelector("good[typeId='band']")?.getAttribute("name") || "Стандарт";
+            // Парсим данные проекта
+            currentProject = xml.querySelector("good[typeId='product']")?.getAttribute("name") || "Заказ";
+            currentMaterial = xml.querySelector("good[typeId='sheet']")?.getAttribute("name") || "ЛДСП";
+            currentEdge = xml.querySelector("good[typeId='band']")?.getAttribute("name") || "ПВХ";
 
-            // Собираем карту техпроцессов (Сверление/Фреза)
-            const techMap = {};
-            const operations = xml.getElementsByTagName("operation");
-            for (let op of operations) {
+            // Карта техпроцессов
+            const tech = {};
+            const ops = xml.getElementsByTagName("operation");
+            for (let op of ops) {
                 if (op.getAttribute("typeId") === "XNC") {
                     const prog = op.getAttribute("program") || "";
                     const hasBore = prog.includes("Bore");
                     const hasMill = prog.includes("Mill") || prog.includes("mac");
-                    
-                    const partRefs = op.getElementsByTagName("part");
-                    for (let ref of partRefs) {
-                        const pid = ref.getAttribute("id");
-                        if (!techMap[pid]) techMap[pid] = { b: false, m: false };
-                        if (hasBore) techMap[pid].b = true;
-                        if (hasMill) techMap[pid].m = true;
+                    const refs = op.getElementsByTagName("part");
+                    for (let r of refs) {
+                        const id = r.getAttribute("id");
+                        if (!tech[id]) tech[id] = { b: false, m: false };
+                        if (hasBore) tech[id].b = true;
+                        if (hasMill) tech[id].m = true;
                     }
                 }
             }
 
+            // Очередь деталей
             queue = [];
             const parts = xml.getElementsByTagName("part");
             for (let p of parts) {
                 if (p.parentNode.nodeName === "good" && p.hasAttribute("dl")) {
-                    const count = parseInt(p.getAttribute("count")) || 1;
                     const id = p.getAttribute("id");
+                    const count = parseInt(p.getAttribute("count")) || 1;
                     for (let c = 0; c < count; c++) {
                         queue.push({
                             id: id,
@@ -226,84 +142,62 @@
                                 t: p.hasAttribute("elt"), b: p.hasAttribute("elb"),
                                 l: p.hasAttribute("ell"), r: p.hasAttribute("elr")
                             },
-                            bore: techMap[id]?.b || false,
-                            mill: techMap[id]?.m || false
+                            bore: tech[id]?.b || false,
+                            mill: tech[id]?.m || false
                         });
                     }
                 }
             }
-            updateStats();
             render();
         };
         reader.readAsText(file, "windows-1251");
     };
 
-    function updateStats() {
-        document.getElementById('stat-proj').innerText = projectTitle;
-        document.getElementById('stat-mat').innerText = mainMaterial;
-        document.getElementById('stat-count').innerText = queue.length + ' шт.';
-    }
-
     function render() {
         const grid = document.getElementById('grid');
+        document.getElementById('stats').innerText = `Деталей в очереди: ${queue.length}`;
         grid.innerHTML = '';
-
-        if (queue.length === 0) {
-            grid.innerHTML = `<div style="grid-column: 1/-1; text-align: center; padding: 100px; opacity: 0.3;">
-                <h1 style="font-size: 60px;">📦</h1>
-                <p>Очередь пуста. Загрузите файл .project</p>
-            </div>`;
-            return;
-        }
 
         queue.forEach((item, index) => {
             const card = document.createElement('div');
             card.className = 'card';
             card.innerHTML = `
-                <div class="card-header">
-                    <div class="p-label">Деталь #${index + 1}</div>
-                    <div style="font-size: 18px;">${item.bore ? '⚙️' : ''} ${item.mill ? '🌀' : ''}</div>
-                </div>
+                <div class="status-icons">${item.bore ? '🔩' : ''} ${item.mill ? '🌀' : ''}</div>
                 <div class="p-name">${item.name}</div>
-                <div class="p-size">${item.l} <span style="color:var(--accent); font-size:20px;">×</span> ${item.w}</div>
-                <div class="badge-container">
-                    <div class="badge ${item.bore ? 'active' : ''}">ПРИСАДКА</div>
-                    <div class="badge ${item.mill ? 'active' : ''}">ФРЕЗА</div>
-                    <div class="badge ${(item.edge.t || item.edge.b || item.edge.l || item.edge.r) ? 'active' : ''}">КРОМКА</div>
-                </div>
+                <div class="p-size">${item.l} × ${item.w}</div>
+                <div style="font-size: 10px; color: var(--accent); margin-top: 10px; font-weight:bold;">НАЖМИТЕ ДЛЯ ПЕЧАТИ</div>
             `;
-            card.onclick = () => printDetail(index);
+            card.onclick = () => startPrint(index);
             grid.appendChild(card);
         });
     }
 
-    function printDetail(index) {
+    function startPrint(index) {
         const item = queue[index];
 
-        // Наполнение данными для печати
-        document.getElementById('p-proj-name').innerText = projectTitle;
-        document.getElementById('p-part-name').innerText = item.name;
-        document.getElementById('p-mat-name').innerText = mainMaterial;
-        document.getElementById('p-dims').innerText = `${item.l} x ${item.w}`;
-        document.getElementById('p-icons').innerText = (item.bore ? '🔩 ' : '') + (item.mill ? '🌀' : '');
+        // 1. Заполняем скрытую область печати данными
+        document.getElementById('p-project').innerText = "Проект: " + currentProject;
+        document.getElementById('p-name').innerText = item.name;
+        document.getElementById('p-material').innerText = "Мат: " + currentMaterial;
+        document.getElementById('p-size-val').innerText = `${item.l} x ${item.w}`;
+        document.getElementById('p-icons').innerText = (item.bore ? '🔩' : '') + (item.mill ? ' 🌀' : '');
         
-        const isEdged = (item.edge.t || item.edge.b || item.edge.l || item.edge.r);
-        document.getElementById('p-edge-label').innerText = isEdged ? edgeMaterial : 'Без кромки';
+        const hasEdge = (item.edge.t || item.edge.b || item.edge.l || item.edge.r);
+        document.getElementById('p-edge-val').innerText = hasEdge ? "Кромка: " + currentEdge : "";
 
-        // Визуализация кромки (границы бокса)
-        const box = document.getElementById('p-size-box');
+        // 2. Рисуем рамку кромки
+        const box = document.getElementById('p-box');
         box.className = 'size-box';
         if (item.edge.t) box.classList.add('e-t');
         if (item.edge.b) box.classList.add('e-b');
         if (item.edge.l) box.classList.add('e-l');
         if (item.edge.r) box.classList.add('e-r');
 
-        // Вызов печати
+        // 3. Запуск печати
         window.print();
 
-        // Удаление из очереди
+        // 4. Удаление из списка
         queue.splice(index, 1);
-        updateStats();
         render();
     }
 </script>
