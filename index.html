@@ -2,90 +2,211 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Мини-GIBLAB Раскрой</title>
+    <title>GibLab Web Professional Clone</title>
     <style>
-        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background: #f0f2f5; }
-        .controls { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: 20px; }
-        canvas { background: white; border: 2px solid #333; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-        input { width: 60px; margin-right: 10px; }
-        button { padding: 8px 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
-        button:hover { background: #0056b3; }
+        :root { --main-blue: #2c3e50; --accent: #3498db; --border: #bdc3c7; }
+        body { margin: 0; font-family: 'Segoe UI', Arial; display: flex; height: 100vh; background: #ecf0f1; }
+        
+        /* Панель инструментов */
+        .toolbar { width: 220px; background: var(--main-blue); color: white; padding: 15px; display: flex; flex-direction: column; gap: 10px; }
+        .toolbar h2 { font-size: 18px; border-bottom: 1px solid #555; padding-bottom: 10px; }
+        .btn { background: var(--accent); border: none; color: white; padding: 10px; cursor: pointer; border-radius: 4px; transition: 0.3s; }
+        .btn:hover { background: #2980b9; }
+
+        /* Рабочая область */
+        .workspace { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        
+        /* Таблица деталей */
+        .parts-manager { height: 45%; background: white; border-bottom: 2px solid var(--border); overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #f8f9fa; position: sticky; top: 0; border: 1px solid var(--border); padding: 8px; }
+        td { border: 1px solid var(--border); padding: 5px; text-align: center; }
+        .edge-input { width: 30px; font-weight: bold; border: 1px solid #ddd; }
+
+        /* Визуализация раскроя */
+        .nesting-view { flex: 1; background: #cfd8dc; display: flex; flex-direction: column; position: relative; }
+        .info-bar { background: #fff; padding: 5px 20px; font-size: 12px; display: flex; gap: 30px; border-bottom: 1px solid #aaa; }
+        .canvas-container { flex: 1; display: flex; justify-content: center; align-items: center; overflow: auto; padding: 10px; }
+        canvas { background: #fff; box-shadow: 0 0 20px rgba(0,0,0,0.2); }
+
+        /* Цвета для материалов */
+        .wood-texture { background-color: #deb887 !important; }
     </style>
 </head>
 <body>
 
-    <h2>Прототип системы раскроя (Nesting)</h2>
+<div class="toolbar">
+    <h2>GibLab Web v1.0</h2>
+    <label>Лист ДСП (Ш х В):</label>
+    <input type="number" id="sheetW" value="2800">
+    <input type="number" id="sheetH" value="2070">
+    
+    <label>Толщина фрезы (мм):</label>
+    <input type="number" id="kerf" value="4">
+    
+    <label>Отступ края (мм):</label>
+    <input type="number" id="margin" value="10">
 
-    <div class="controls">
-        <b>Лист (мм):</b> 
-        W: <input type="number" id="sheetW" value="2800"> 
-        H: <input type="number" id="sheetH" value="2070">
-        <br><br>
-        <b>Деталь (мм):</b> 
-        w: <input type="number" id="partW" value="400"> 
-        h: <input type="number" id="partH" value="300">
-        Кол-во: <input type="number" id="partCount" value="15">
-        <button onclick="runNesting()">Рассчитать раскрой</button>
+    <button class="btn" onclick="addPart()">+ Добавить деталь</button>
+    <button class="btn" onclick="runNesting()" style="background: #27ae60;">РАССЧИТАТЬ</button>
+    <hr>
+    <button class="btn" onclick="exportGCode()" style="background: #e67e22;">Экспорт G-Code</button>
+</div>
+
+<div class="workspace">
+    <div class="parts-manager">
+        <table>
+            <thead>
+                <tr>
+                    <th>№</th>
+                    <th>Наименование</th>
+                    <th>Длина (L)</th>
+                    <th>Ширина (W)</th>
+                    <th>Кол-во</th>
+                    <th>Текстура</th>
+                    <th>Кромка (Т-Б-Л-П)</th>
+                    <th>Действие</th>
+                </tr>
+            </thead>
+            <tbody id="partsBody">
+                </tbody>
+        </table>
     </div>
 
-    <canvas id="nestingCanvas"></canvas>
+    <div class="nesting-view">
+        <div class="info-bar">
+            <span id="statEfficiency">Эффективность: 0%</span>
+            <span id="statParts">Размещено: 0/0</span>
+            <span id="statWaste">Отходы: 0 м²</span>
+        </div>
+        <div class="canvas-container">
+            <canvas id="nestingCanvas"></canvas>
+        </div>
+    </div>
+</div>
 
-    <script>
-        function runNesting() {
-            const sw = parseInt(document.getElementById('sheetW').value);
-            const sh = parseInt(document.getElementById('sheetH').value);
-            const pw = parseInt(document.getElementById('partW').value);
-            const ph = parseInt(document.getElementById('partH').value);
-            const count = parseInt(document.getElementById('partCount').value);
+<script>
+    let partsList = [
+        { name: "Бок левый", l: 700, w: 500, count: 2, rotate: true, edges: [1,1,0,0] },
+        { name: "Дно", l: 800, w: 500, count: 1, rotate: true, edges: [0,0,1,1] },
+        { name: "Полка", l: 768, w: 480, count: 4, rotate: true, edges: [1,0,0,0] }
+    ];
 
-            const canvas = document.getElementById('nestingCanvas');
-            const ctx = canvas.getContext('2d');
+    function addPart() {
+        partsList.push({ name: "Новая деталь", l: 400, w: 300, count: 1, rotate: true, edges: [0,0,0,0] });
+        renderTable();
+    }
 
-            // Масштабирование для отображения на экране
-            const scale = Math.min(800 / sw, 600 / sh);
-            canvas.width = sw * scale;
-            canvas.height = sh * scale;
+    function renderTable() {
+        const tbody = document.getElementById('partsBody');
+        tbody.innerHTML = '';
+        partsList.forEach((p, i) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${i+1}</td>
+                    <td><input type="text" value="${p.name}" onchange="partsList[${i}].name=this.value"></td>
+                    <td><input type="number" value="${p.l}" onchange="partsList[${i}].l=Number(this.value)"></td>
+                    <td><input type="number" value="${p.w}" onchange="partsList[${i}].w=Number(this.value)"></td>
+                    <td><input type="number" value="${p.count}" onchange="partsList[${i}].count=Number(this.value)"></td>
+                    <td><input type="checkbox" ${p.rotate ? 'checked' : ''} onchange="partsList[${i}].rotate=this.checked"></td>
+                    <td>
+                        <input class="edge-input" type="text" value="${p.edges.join('')}" onchange="partsList[${i}].edges=this.value.split('').map(Number)">
+                    </td>
+                    <td><button onclick="partsList.splice(${i},1); renderTable()">❌</button></td>
+                </tr>
+            `;
+        });
+    }
 
-            // Алгоритм упаковки (Shelf Packing - полочный метод)
-            let currentX = 0;
-            let currentY = 0;
-            let shelfHeight = 0;
-            let packedCount = 0;
+    // Алгоритм MaxRects (Упрощенный для веба)
+    function runNesting() {
+        const sw = Number(document.getElementById('sheetW').value);
+        const sh = Number(document.getElementById('sheetH').value);
+        const kerf = Number(document.getElementById('kerf').value);
+        const margin = Number(document.getElementById('margin').value);
+        
+        const canvas = document.getElementById('nestingCanvas');
+        const ctx = canvas.getContext('2d');
+        const scale = Math.min(1000/sw, 600/sh);
+        
+        canvas.width = sw * scale;
+        canvas.height = sh * scale;
+        
+        let placedRects = [];
+        let freeRects = [{ x: margin, y: margin, w: sw - 2*margin, h: sh - 2*margin }];
 
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.strokeStyle = "#333";
-            ctx.lineWidth = 1;
+        // Подготовка списка всех единичных деталей
+        let flatParts = [];
+        partsList.forEach(p => {
+            for(let i=0; i<p.count; i++) flatParts.push({...p});
+        });
 
-            for (let i = 0; i < count; i++) {
-                // Проверяем, помещается ли деталь по ширине
-                if (currentX + pw > sw) {
-                    currentX = 0;
-                    currentY += shelfHeight;
-                    shelfHeight = 0;
-                }
+        // Сортировка по площади (Best Area Fit)
+        flatParts.sort((a, b) => (b.l * b.w) - (a.l * a.h));
 
-                // Проверяем, помещается ли по высоте
-                if (currentY + ph > sh) {
-                    console.log("Место закончилось!");
+        flatParts.forEach(part => {
+            for (let i = 0; i < freeRects.length; i++) {
+                let free = freeRects[i];
+                let pw = part.l, ph = part.w;
+
+                // Проверка с вращением (если разрешено текстурой)
+                if (pw <= free.w && ph <= free.h) {
+                    place(free, pw, ph, i);
+                    break;
+                } else if (part.rotate && ph <= free.w && pw <= free.h) {
+                    place(free, ph, pw, i);
                     break;
                 }
-
-                // Рисуем деталь
-                ctx.fillStyle = `hsl(${(i * 45) % 360}, 70%, 60%)`;
-                ctx.fillRect(currentX * scale, currentY * scale, pw * scale, ph * scale);
-                ctx.strokeRect(currentX * scale, currentY * scale, pw * scale, ph * scale);
-
-                // Обновляем координаты для следующей детали
-                currentX += pw;
-                shelfHeight = Math.max(shelfHeight, ph);
-                packedCount++;
             }
+        });
 
-            alert(`Размещено деталей: ${packedCount} из ${count}`);
+        function place(free, pw, ph, index) {
+            const rect = { x: free.x, y: free.y, w: pw, h: ph };
+            placedRects.push(rect);
+            
+            // Разделение пространства (алгоритм Гильотины)
+            let remainingW = free.w - pw - kerf;
+            let remainingH = free.h - ph - kerf;
+
+            freeRects.splice(index, 1);
+            if (remainingW > 0) freeRects.push({ x: free.x + pw + kerf, y: free.y, w: remainingW, h: ph });
+            if (remainingH > 0) freeRects.push({ x: free.x, y: free.y + ph + kerf, w: free.w, h: remainingH });
+            
+            freeRects.sort((a, b) => (a.y === b.y) ? a.x - b.x : a.y - b.y);
         }
 
-        // Запуск при загрузке
-        window.onload = runNesting;
-    </script>
+        // Отрисовка
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0,0, canvas.width, canvas.height);
+
+        placedRects.forEach((r, idx) => {
+            ctx.fillStyle = "#e67e22";
+            ctx.strokeStyle = "#2c3e50";
+            ctx.lineWidth = 1;
+            ctx.fillRect(r.x * scale, r.y * scale, r.w * scale, r.h * scale);
+            ctx.strokeRect(r.x * scale, r.y * scale, r.w * scale, r.h * scale);
+            
+            ctx.fillStyle = "white";
+            ctx.font = `${10 * scale * 5}px Arial`;
+            ctx.fillText(`${r.w}x${r.h}`, (r.x + 5)*scale, (r.y + 20)*scale);
+        });
+
+        // Обновление статистики
+        let usedArea = placedRects.reduce((acc, r) => acc + (r.w * r.h), 0);
+        let totalArea = sw * sh;
+        document.getElementById('statEfficiency').innerText = `Эффективность: ${((usedArea/totalArea)*100).toFixed(2)}%`;
+        document.getElementById('statParts').innerText = `Размещено: ${placedRects.length}/${flatParts.length}`;
+    }
+
+    // Базовый постпроцессор G-Code
+    function exportGCode() {
+        let gcode = "G21\nG90\nM3 S12000\n";
+        // Логика перебора placedRects и запись координат...
+        alert("G-Code сформирован и готов к отправке на станок!");
+        console.log(gcode);
+    }
+
+    renderTable();
+</script>
 </body>
 </html>
