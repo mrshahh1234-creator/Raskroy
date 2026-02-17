@@ -2,44 +2,42 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GibLab: Очередь раскроя</title>
+    <title>GibLab: Очередь печати (XML)</title>
     <style>
-        :root { --main: #e74c3c; --bg: #121212; --card: #1e1e1e; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #fff; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        :root { --accent: #e74c3c; --bg: #121212; --card: #1e1e1e; --text: #ffffff; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* Панель управления */
-        .header { background: #252525; padding: 15px 25px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid var(--main); }
-        .logo { font-size: 22px; font-weight: bold; }
-        .logo span { color: var(--main); }
-        .btn-load { background: var(--main); color: white; border: none; padding: 12px 25px; cursor: pointer; font-weight: bold; border-radius: 5px; font-size: 14px; }
-        
-        /* Список деталей */
-        .container { flex: 1; padding: 25px; overflow-y: auto; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
-        
+        /* Шапка */
+        .header { background: #252525; padding: 15px 25px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid var(--accent); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .logo { font-size: 22px; font-weight: bold; letter-spacing: 1px; }
+        .logo span { color: var(--accent); }
+        .btn-load { background: var(--accent); color: white; border: none; padding: 12px 25px; cursor: pointer; font-weight: bold; border-radius: 5px; transition: 0.2s; }
+        .btn-load:hover { background: #c0392b; }
+
+        /* Контейнер для плиток */
+        .main-container { flex: 1; padding: 20px; overflow-y: auto; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
+
+        /* Карточка детали */
         .card { 
-            background: var(--card); border: 1px solid #333; border-radius: 12px; padding: 20px; 
-            cursor: pointer; transition: 0.2s; position: relative; text-align: center;
+            background: var(--card); border: 1px solid #333; border-radius: 10px; padding: 20px; 
+            cursor: pointer; transition: 0.2s; text-align: center; position: relative;
         }
-        .card:hover { border-color: var(--main); transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.4); }
+        .card:hover { border-color: var(--accent); transform: translateY(-3px); background: #252525; }
         .card:active { transform: scale(0.95); }
         
-        .card-num { position: absolute; top: 12px; left: 12px; color: #555; font-size: 12px; font-weight: bold; }
-        .p-name { color: #888; font-size: 13px; margin-bottom: 10px; text-transform: uppercase; }
-        .p-size { font-size: 32px; font-weight: bold; margin: 5px 0; letter-spacing: 1px; }
-        .p-mat { font-size: 11px; color: #555; margin-top: 10px; background: #151515; padding: 5px; border-radius: 4px; }
+        .p-name { color: #888; font-size: 13px; margin-bottom: 10px; height: 35px; overflow: hidden; }
+        .p-size { font-size: 32px; font-weight: bold; color: #fff; }
+        .p-status { font-size: 10px; color: var(--accent); margin-top: 10px; font-weight: bold; letter-spacing: 1px; }
 
-        .empty { text-align: center; color: #444; margin-top: 100px; font-size: 20px; }
-
-        /* Печать этикетки (58мм) */
+        /* Печать (58мм) */
         @media print {
             body * { display: none; }
-            #print-ticket { display: block !important; width: 58mm; color: black; text-align: center; padding: 5px; font-family: sans-serif; }
-            .pr-size { font-size: 26pt; font-weight: bold; margin: 5px 0; }
-            .pr-name { font-size: 12pt; border-bottom: 1px solid #000; padding-bottom: 5px; }
+            #print-area { display: block !important; width: 58mm; color: black; text-align: center; padding: 5px; font-family: Arial; }
+            .pr-size { font-size: 24pt; font-weight: bold; margin: 5px 0; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 5px 0; }
+            .pr-name { font-size: 11pt; margin-bottom: 5px; }
         }
-        #print-ticket { display: none; }
+        #print-area { display: none; }
     </style>
 </head>
 <body>
@@ -47,114 +45,111 @@
 <div class="header">
     <div class="logo">GIBLAB <span>MONITOR</span></div>
     <div style="display: flex; gap: 20px; align-items: center;">
-        <div id="count">Деталей: 0</div>
-        <input type="file" id="file" style="display:none" accept=".project">
-        <button class="btn-load" onclick="document.getElementById('file').click()">ЗАГРУЗИТЬ ЗАКАЗ</button>
+        <div id="stats">Ожидание файла...</div>
+        <input type="file" id="fileInput" style="display:none" accept=".project">
+        <button class="btn-load" onclick="document.getElementById('fileInput').click()">ЗАГРУЗИТЬ ЗАКАЗ</button>
     </div>
 </div>
 
-<div class="container">
-    <div id="grid" class="grid">
-        <div class="empty">Выберите файл .project для начала работы</div>
-    </div>
+<div class="main-container">
+    <div id="grid" class="grid"></div>
 </div>
 
-<div id="print-ticket">
-    <div class="pr-name" id="pr-name">Название</div>
-    <div class="pr-size" id="pr-size">000 x 000</div>
-    <div id="pr-mat" style="font-size: 10pt;">Материал</div>
-    <div style="margin-top: 10px; font-size: 8pt;">GibLab Export System</div>
+<div id="print-area">
+    <div class="pr-name" id="label-name">Название</div>
+    <div class="pr-size" id="label-size">000 x 000</div>
+    <div style="font-size: 9pt; margin-top: 5px;">GibLab Export System</div>
 </div>
 
 <script>
     let queue = [];
 
-    document.getElementById('file').onchange = function(e) {
+    document.getElementById('fileInput').onchange = function(e) {
         const file = e.target.files[0];
         if (!file) return;
 
         const reader = new FileReader();
         reader.onload = function(event) {
-            let str = event.target.result;
             try {
-                // ОЧИСТКА: Удаляем var data = и прочий мусор, если он есть
-                const startIdx = str.indexOf('{');
-                const endIdx = str.lastIndexOf('}');
-                if (startIdx !== -1 && endIdx !== -1) {
-                    str = str.substring(startIdx, endIdx + 1);
-                }
-
-                const data = JSON.parse(str);
-                loadQueue(data);
+                const parser = new DOMParser();
+                // Кодировка windows-1251 как в вашем XML
+                const xmlDoc = parser.parseFromString(event.target.result, "text/xml");
+                parseParts(xmlDoc);
             } catch (err) {
+                alert("Ошибка: Неверный формат XML в файле .project");
                 console.error(err);
-                alert("Ошибка: Не удалось прочитать данные. Проверьте файл.");
             }
         };
-        reader.readAsText(file);
+        reader.readAsText(file, "windows-1251");
     };
 
-    function loadQueue(data) {
+    function parseParts(xml) {
         queue = [];
-        // В скрипте GibLab данные в opCutSheets -> parts
-        if (data.opCutSheets) {
-            data.opCutSheets.forEach(sheet => {
-                if (sheet.parts) {
-                    sheet.parts.forEach(p => {
-                        queue.push({
-                            name: p.Name || "Деталь",
-                            // Используем cl и thick как в вашем скрипте, если Width/Height нет
-                            w: Math.round(p.Width || p.cl || 0),
-                            h: Math.round(p.Height || p.thick || 0),
-                            mat: sheet.MaterialName || "ЛДСП"
-                        });
+        const parts = xml.getElementsByTagName("part");
+
+        for (let i = 0; i < parts.length; i++) {
+            const p = parts[i];
+            
+            // Собираем данные из атрибутов вашего XML
+            const name = p.getAttribute("name");
+            const length = p.getAttribute("dl");
+            const width = p.getAttribute("dw");
+            const count = parseInt(p.getAttribute("count")) || 1;
+
+            // Добавляем деталь в очередь столько раз, сколько указано в count
+            if (name && length && width) {
+                for (let c = 0; c < count; c++) {
+                    queue.push({
+                        name: name,
+                        w: Math.round(parseFloat(length)),
+                        h: Math.round(parseFloat(width))
                     });
                 }
-            });
+            }
         }
         render();
     }
 
     function render() {
         const grid = document.getElementById('grid');
-        const count = document.getElementById('count');
-        
+        const stats = document.getElementById('stats');
+        grid.innerHTML = '';
+
         if (queue.length === 0) {
-            grid.innerHTML = '<div class="empty">Заказ выполнен! Загрузите новый файл.</div>';
-            count.innerText = "Очередь пуста";
+            stats.innerText = "Очередь пуста";
+            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; margin-top:50px; color:#555;"><h3>Загрузите файл или завершите работу</h3></div>';
             return;
         }
 
-        count.innerText = `Осталось: ${queue.length}`;
-        grid.innerHTML = '';
+        stats.innerText = `Деталей в списке: ${queue.length}`;
 
-        queue.forEach((p, idx) => {
+        queue.forEach((part, index) => {
             const card = document.createElement('div');
             card.className = 'card';
             card.innerHTML = `
-                <div class="card-num">#${idx + 1}</div>
-                <div class="p-name">${p.name}</div>
-                <div class="p-size">${p.w} × ${p.h}</div>
-                <div class="p-mat">${p.mat}</div>
+                <div class="p-name">${part.name}</div>
+                <div class="p-size">${part.w} × ${part.h}</div>
+                <div class="p-status">НАЖМИТЕ ДЛЯ ПЕЧАТИ</div>
             `;
-            card.onclick = () => printAndClose(idx);
+            card.onclick = () => processPart(index);
             grid.appendChild(card);
         });
     }
 
-    function printAndClose(idx) {
-        const p = queue[idx];
+    function processPart(index) {
+        const part = queue[index];
 
-        // Заполнение этикетки
-        document.getElementById('pr-name').innerText = p.name;
-        document.getElementById('pr-size').innerText = `${p.w} × ${p.h}`;
-        document.getElementById('pr-mat').innerText = p.mat;
+        // 1. Установка данных в этикетку
+        document.getElementById('label-name').innerText = part.name;
+        document.getElementById('label-size').innerText = `${part.w} × ${part.h}`;
 
-        // Печать
+        // 2. Команда на печать
         window.print();
 
-        // Удаление из очереди и автоматический сдвиг
-        queue.splice(idx, 1);
+        // 3. Удаление из очереди (сдвиг)
+        queue.splice(index, 1);
+
+        // 4. Обновление экрана
         render();
     }
 </script>
