@@ -2,117 +2,109 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mustafayev Academy | Visual Cutting</title>
+    <title>Mustafayev Academy | XML Cutting Terminal</title>
     <style>
         :root {
-            --bg-color: #0f172a;
-            --panel-bg: rgba(30, 41, 59, 0.8);
-            --accent-green: #10b981;
-            --accent-blue: #3b82f6;
-            --text-main: #f8fafc;
-            --detail-color: #334155;
-            --detail-cut: #065f46;
+            --bg: #0f172a;
+            --panel: #1e293b;
+            --accent: #10b981;
+            --blue: #3b82f6;
+            --text: #f8fafc;
         }
 
         body {
             font-family: 'Segoe UI', sans-serif;
-            background: var(--bg-color);
-            color: var(--text-main);
-            margin: 0; padding: 0;
-            overflow: hidden; /* Фиксируем экран терминала */
-            display: flex; flex-direction: column; height: 100vh;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0; display: flex; flex-direction: column; height: 100vh;
         }
 
         header {
-            padding: 15px 40px;
-            background: #1e293b;
+            padding: 20px 40px;
+            background: var(--panel);
+            border-bottom: 2px solid var(--blue);
             display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 2px solid var(--accent-blue);
         }
 
         .controls {
             padding: 20px 40px;
-            background: var(--panel-bg);
-            display: flex; gap: 20px; align-items: center;
+            background: rgba(30, 41, 59, 0.5);
+            display: flex; gap: 15px; align-items: center;
         }
 
         .btn-load {
-            background: var(--accent-blue);
+            background: var(--blue);
             color: white; padding: 12px 25px; border-radius: 8px;
-            cursor: pointer; font-weight: bold; border: none;
+            cursor: pointer; font-weight: bold; border: none; transition: 0.2s;
         }
 
-        /* Визуализация плиты */
-        .cutting-area {
+        .btn-load:hover { background: #2563eb; transform: scale(1.02); }
+
+        /* Рабочая зона */
+        .workspace {
             flex: 1;
-            padding: 40px;
             display: flex; justify-content: center; align-items: center;
-            overflow: auto;
+            padding: 40px; overflow: auto;
         }
 
         #plate {
             position: relative;
-            background: #1e293b;
-            border: 3px solid #475569;
-            box-shadow: 0 0 50px rgba(0,0,0,0.5);
-            transition: 0.3s;
+            background: #334155;
+            border: 2px solid #64748b;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
         }
 
-        .detail {
+        .part {
             position: absolute;
+            background: #475569;
             border: 1px solid rgba(255,255,255,0.2);
-            background: var(--detail-color);
-            display: flex;
+            display: flex; flex-direction: column;
             align-items: center; justify-content: center;
-            color: white; font-size: 12px; font-weight: bold;
-            cursor: pointer; overflow: hidden;
-            transition: all 0.2s;
+            cursor: pointer; transition: 0.2s;
+            overflow: hidden; font-size: 11px; text-align: center;
         }
 
-        .detail:hover { filter: brightness(1.3); border: 1px solid var(--accent-blue); }
+        .part:hover { background: #334155; border-color: var(--blue); z-index: 10; }
 
-        /* Стиль для уже порезанной детали */
-        .detail.cut {
-            background: var(--detail-cut) !important;
-            border-color: var(--accent-green);
+        /* Когда деталь порезана и нажата */
+        .part.is-cut {
+            background: var(--accent) !important;
             opacity: 0.6;
         }
 
         footer {
             padding: 15px 40px;
             text-align: right;
-            background: #0f172a;
+            background: var(--panel);
             font-size: 18px;
-            border-top: 1px solid rgba(255,255,255,0.1);
         }
-        footer b { color: var(--accent-green); }
+
+        footer b { color: var(--accent); }
 
         /* Печать */
         @media print {
             .no-print { display: none !important; }
             #print-area { display: block !important; }
         }
-        #print-area { display: none; color: black; text-align: center; font-family: Arial; }
+        #print-area { display: none; color: black; font-family: Arial; }
     </style>
 </head>
 <body>
 
 <header class="no-print">
-    <div><h1>MUSTAFAYEV FACTORY <span style="font-weight: 200; font-size: 16px;">| VISUAL CUT v2.0</span></h1></div>
-    <div id="clock">00:00:00</div>
+    <h1>MUSTAFAYEV FACTORY <span style="font-weight: 200; font-size: 14px;">| XML IMPORT</span></h1>
+    <div id="clock"></div>
 </header>
 
 <div class="controls no-print">
-    <label class="btn-load">📥 ЗАГРУЗИТЬ КАРТУ РАСКРОЯ (.BIR)
-        <input type="file" id="fileInput" accept=".bir" style="display:none" onchange="loadBir(event)">
+    <label class="btn-load">📥 ИМПОРТ XML / CUT
+        <input type="file" id="fileInput" accept=".xml,.cut" style="display:none" onchange="handleFile(event)">
     </label>
-    <div id="file-status" style="color: var(--accent-blue)">Загрузите файл для начала работы</div>
+    <div id="file-info" style="color: var(--blue)">Ожидание файла раскроя...</div>
 </div>
 
-<div class="cutting-area no-print">
-    <div id="plate">
-        </div>
+<div class="workspace no-print">
+    <div id="plate"></div>
 </div>
 
 <footer class="no-print">
@@ -120,70 +112,72 @@
 </footer>
 
 <div id="print-area">
-    <div style="border: 2px solid black; padding: 15px; width: 60mm; margin: auto;">
-        <div style="font-size: 10pt; border-bottom: 1px solid #000;">MUSTAFAYEV ACADEMY</div>
-        <h2 id="p-name" style="margin: 10px 0; font-size: 16pt;"></h2>
+    <div style="border: 2px solid black; padding: 15px; width: 60mm; margin: auto; text-align: center;">
+        <div style="border-bottom: 1px solid black; font-size: 10pt;">MUSTAFAYEV ACADEMY</div>
+        <h2 id="p-name" style="margin: 10px 0;"></h2>
         <h1 id="p-size" style="font-size: 28pt; margin: 5px 0;"></h1>
-        <div id="p-order" style="font-size: 12pt;"></div>
-        <div id="p-time" style="font-size: 8pt; margin-top: 10px;"></div>
+        <div id="p-order"></div>
+        <div id="p-date" style="font-size: 8pt; margin-top: 10px;"></div>
     </div>
 </div>
 
 <script>
     setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
 
-    const plate = document.getElementById('plate');
-    const scale = 0.5; // Масштаб отображения на экране (1мм = 0.5px)
+    const SCALE = 0.4; // Масштаб отображения
 
-    function loadBir(event) {
+    function handleFile(event) {
         const file = event.target.files[0];
         if (!file) return;
+        document.getElementById('file-info').innerText = "Файл: " + file.name;
 
         const reader = new FileReader();
         reader.onload = function(e) {
-            const lines = e.target.result.split('\n');
-            renderPlate(lines);
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
+            
+            // Пытаемся найти размеры основной плиты (Sheet)
+            const sheet = xmlDoc.getElementsByTagName("Sheet")[0] || xmlDoc.getElementsByTagName("Panel")[0];
+            const pW = sheet ? parseInt(sheet.getAttribute("Width")) : 2800;
+            const pH = sheet ? parseInt(sheet.getAttribute("Height")) : 2070;
+
+            renderLayout(xmlDoc, pW, pH);
         };
         reader.readAsText(file);
     }
 
-    function renderPlate(lines) {
+    function renderLayout(xml, pW, pH) {
+        const plate = document.getElementById('plate');
         plate.innerHTML = '';
+        plate.style.width = (pW * SCALE) + 'px';
+        plate.style.height = (pH * SCALE) + 'px';
+
+        // Ищем все элементы деталей (в XML они часто называются Part или Item)
+        const parts = xml.getElementsByTagName("Part");
         
-        // Допустим, первая строка файла .bir - это размер плиты: Ширина;Высота
-        // Например: 2800;2070
-        const plateSize = lines[0].split(';');
-        const pWidth = parseInt(plateSize[0]) || 2800;
-        const pHeight = parseInt(plateSize[1]) || 2070;
-
-        plate.style.width = (pWidth * scale) + 'px';
-        plate.style.height = (pHeight * scale) + 'px';
-
-        // Остальные строки - это детали: X; Y; Ширина; Высота; Имя; Заказ
-        for (let i = 1; i < lines.length; i++) {
-            const parts = lines[i].split(';');
-            if (parts.length < 4) continue;
-
-            const x = parseInt(parts[0]);
-            const y = parseInt(parts[1]);
-            const w = parseInt(parts[2]);
-            const h = parseInt(parts[3]);
-            const name = parts[4] || "Деталь";
-            const order = parts[5] || "Б/З";
+        for (let i = 0; i < parts.length; i++) {
+            const p = parts[i];
+            const x = parseInt(p.getAttribute("X") || 0);
+            const y = parseInt(p.getAttribute("Y") || 0);
+            const w = parseInt(p.getAttribute("Width") || 0);
+            const h = parseInt(p.getAttribute("Height") || 0);
+            const name = p.getAttribute("Name") || "Деталь";
+            const order = p.getAttribute("Order") || "Заказ";
 
             const div = document.createElement('div');
-            div.className = 'detail';
-            div.style.left = (x * scale) + 'px';
-            div.style.top = (y * scale) + 'px';
-            div.style.width = (w * scale) + 'px';
-            div.style.height = (h * scale) + 'px';
+            div.className = 'part';
+            div.style.left = (x * SCALE) + 'px';
+            div.style.top = (y * SCALE) + 'px';
+            div.style.width = (w * SCALE) + 'px';
+            div.style.height = (h * SCALE) + 'px';
             
-            // Если деталь слишком маленькая, не пишем текст
-            if (w > 100) div.innerText = `${name}\n${w}x${h}`;
+            if (w > 80 && h > 40) {
+                div.innerHTML = `<b>${name}</b><br>${w}x${h}`;
+            }
 
             div.onclick = function() {
-                this.classList.toggle('cut'); // Выделяем как порезанную
-                printLabel(name, w + 'x' + h, order); // Печатаем
+                this.classList.toggle('is-cut');
+                printLabel(name, w + 'x' + h, order);
             };
 
             plate.appendChild(div);
@@ -194,10 +188,9 @@
         document.getElementById('p-name').innerText = name;
         document.getElementById('p-size').innerText = size;
         document.getElementById('p-order').innerText = "ЗАКАЗ: " + order;
-        document.getElementById('p-time').innerText = new Date().toLocaleString();
+        document.getElementById('p-date').innerText = new Date().toLocaleString();
         window.print();
     }
 </script>
-
 </body>
 </html>
