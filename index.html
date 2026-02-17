@@ -2,96 +2,73 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Mustafayev Academy Control</title>
+    <title>Mustafayev Academy | Production</title>
     <style>
-        :root { --accent: #2ecc71; --bg: #0f1215; --card-bg: #1c2227; --text: #e0e6ed; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        :root { --accent: #2ecc71; --bg: #0f1215; --card: #1c2227; --text: #e0e6ed; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; }
         
-        /* Интерфейс сайта */
+        /* Шапка */
         .header { background: #1a1a1a; padding: 15px 25px; display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--accent); }
-        .logo { font-size: 20px; font-weight: bold; letter-spacing: 1px; }
+        .logo { font-size: 20px; font-weight: bold; text-transform: uppercase; }
         .logo span { color: var(--accent); }
         .btn-load { background: var(--accent); color: #000; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 6px; }
-        
-        .main-container { flex: 1; padding: 20px; overflow-y: auto; }
+
+        /* Контент */
+        .main { flex: 1; padding: 20px; overflow-y: auto; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
         
+        /* Карточка детали */
         .card { 
-            background: var(--card-bg); border: 1px solid #333; border-radius: 12px; padding: 15px; 
-            cursor: pointer; position: relative; transition: 0.3s;
+            background: var(--card); border: 1px solid #333; border-radius: 12px; padding: 15px; 
+            cursor: pointer; position: relative; transition: 0.2s;
         }
-        .card:hover { border-color: var(--accent); transform: translateY(-3px); background: #252b33; }
-        .p-name { font-size: 14px; color: #888; margin-bottom: 5px; }
+        .card:hover { border-color: var(--accent); background: #252b33; }
+        .p-name { font-size: 14px; color: #888; margin-bottom: 8px; }
         .p-size { font-size: 32px; font-weight: bold; }
-        .status-icons { position: absolute; top: 15px; right: 15px; font-size: 20px; }
+        .icons { position: absolute; top: 15px; right: 15px; font-size: 20px; }
+        .click-hint { font-size: 10px; color: var(--accent); margin-top: 10px; font-weight: bold; }
 
-        /* НАСТРОЙКА ПЕЧАТИ (58мм термопринтер) */
-        @media print {
-            @page { margin: 0; }
-            body * { visibility: hidden; }
-            #print-area, #print-area * { visibility: visible; }
-            #print-area { 
-                position: absolute; left: 0; top: 0; width: 58mm; 
-                padding: 2mm; color: #000 !important; background: #fff !important;
-            }
-            .pr-header { font-size: 10pt; font-weight: bold; border-bottom: 1pt solid #000; text-align: center; margin-bottom: 2mm; padding-bottom: 1mm;}
-            .pr-info { font-size: 7pt; margin-bottom: 1mm; line-height: 1.1; }
-            .pr-part-name { font-size: 10pt; font-weight: bold; margin: 1mm 0; }
-            
-            /* Визуальный бокс детали с кромкой */
-            .size-box { 
-                border: 1pt solid #ccc; margin: 2mm 0; padding: 3mm 0; 
-                text-align: center; font-size: 24pt; font-weight: bold; position: relative;
-            }
-            .e-t { border-top: 5pt solid #000 !important; }
-            .e-b { border-bottom: 5pt solid #000 !important; }
-            .e-l { border-left: 5pt solid #000 !important; }
-            .e-r { border-right: 5pt solid #000 !important; }
-
-            .pr-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 2mm; border-top: 0.5pt solid #000; padding-top: 1mm; }
-            .pr-edge-text { font-size: 7pt; font-weight: normal; max-width: 70%; }
-            .pr-tech { font-size: 14pt; }
-        }
-        
-        #print-area { display: none; } /* Скрыто в браузере */
+        /* Стили, которые полетят на принтер (внутри Iframe) */
+        #print-template { display: none; }
     </style>
 </head>
 <body>
 
 <div class="header">
     <div class="logo">MUSTAFAYEV <span>ACADEMY</span></div>
-    <div style="display: flex; gap: 15px; align-items: center;">
-        <div id="stats" style="font-size: 13px;">Загрузите файл проекта</div>
+    <div>
         <input type="file" id="fileInput" style="display:none" accept=".project">
-        <button class="btn-load" onclick="document.getElementById('fileInput').click()">ОТКРЫТЬ ПРОЕКТ</button>
+        <button class="btn-load" onclick="document.getElementById('fileInput').click()">ЗАГРУЗИТЬ .PROJECT</button>
     </div>
 </div>
 
-<div class="main-container">
+<div class="main">
     <div id="grid" class="grid"></div>
 </div>
 
-<div id="print-area">
-    <div class="pr-header">Mustafayev Academy</div>
-    <div class="pr-info" id="p-project">Проект: -</div>
-    <div class="pr-part-name" id="p-name">Наименование детали</div>
-    <div class="pr-info" id="p-material">Материал: -</div>
-    
-    <div id="p-box" class="size-box">
-        <span id="p-size-val">0 x 0</span>
-    </div>
+<div id="print-template">
+    <div style="width: 54mm; font-family: Arial, sans-serif; color: black; padding: 2mm;">
+        <div style="text-align: center; font-weight: bold; border-bottom: 1px solid black; margin-bottom: 2mm; font-size: 10pt;">
+            MUSTAFAYEV ACADEMY
+        </div>
+        <div id="tpl-project" style="font-size: 8pt;"></div>
+        <div id="tpl-name" style="font-size: 11pt; font-weight: bold; margin: 1mm 0;"></div>
+        <div id="tpl-mat" style="font-size: 8pt; margin-bottom: 2mm;"></div>
+        
+        <div id="tpl-box" style="border: 1px solid #ccc; text-align: center; padding: 5mm 0; font-size: 26pt; font-weight: bold;">
+            <span id="tpl-size"></span>
+        </div>
 
-    <div class="pr-footer">
-        <div class="pr-edge-text" id="p-edge-val">Кромка: -</div>
-        <div class="pr-tech" id="p-icons"></div>
+        <div style="display: flex; justify-content: space-between; margin-top: 2mm; border-top: 1px solid black; padding-top: 1mm;">
+            <div id="tpl-edge" style="font-size: 8pt; width: 70%;"></div>
+            <div id="tpl-icons" style="font-size: 14pt;"></div>
+        </div>
     </div>
 </div>
 
 <script>
     let queue = [];
-    let currentProject = "";
-    let currentMaterial = "";
-    let currentEdge = "";
+    let projData = { name: "", mat: "", edge: "" };
 
     document.getElementById('fileInput').onchange = function(e) {
         const file = e.target.files[0];
@@ -102,30 +79,26 @@
             const parser = new DOMParser();
             const xml = parser.parseFromString(ev.target.result, "text/xml");
             
-            // Парсим данные проекта
-            currentProject = xml.querySelector("good[typeId='product']")?.getAttribute("name") || "Заказ";
-            currentMaterial = xml.querySelector("good[typeId='sheet']")?.getAttribute("name") || "ЛДСП";
-            currentEdge = xml.querySelector("good[typeId='band']")?.getAttribute("name") || "ПВХ";
+            projData.name = xml.querySelector("good[typeId='product']")?.getAttribute("name") || "Заказ";
+            projData.mat = xml.querySelector("good[typeId='sheet']")?.getAttribute("name") || "ЛДСП";
+            projData.edge = xml.querySelector("good[typeId='band']")?.getAttribute("name") || "Кромка";
 
-            // Карта техпроцессов
             const tech = {};
             const ops = xml.getElementsByTagName("operation");
             for (let op of ops) {
                 if (op.getAttribute("typeId") === "XNC") {
-                    const prog = op.getAttribute("program") || "";
-                    const hasBore = prog.includes("Bore");
-                    const hasMill = prog.includes("Mill") || prog.includes("mac");
-                    const refs = op.getElementsByTagName("part");
-                    for (let r of refs) {
+                    const isB = (op.getAttribute("program") || "").includes("Bore");
+                    const isM = (op.getAttribute("program") || "").includes("Mill");
+                    const pRefs = op.getElementsByTagName("part");
+                    for (let r of pRefs) {
                         const id = r.getAttribute("id");
                         if (!tech[id]) tech[id] = { b: false, m: false };
-                        if (hasBore) tech[id].b = true;
-                        if (hasMill) tech[id].m = true;
+                        if (isB) tech[id].b = true;
+                        if (isM) tech[id].m = true;
                     }
                 }
             }
 
-            // Очередь деталей
             queue = [];
             const parts = xml.getElementsByTagName("part");
             for (let p of parts) {
@@ -138,12 +111,8 @@
                             name: p.getAttribute("name"),
                             l: Math.round(parseFloat(p.getAttribute("dl"))),
                             w: Math.round(parseFloat(p.getAttribute("dw"))),
-                            edge: {
-                                t: p.hasAttribute("elt"), b: p.hasAttribute("elb"),
-                                l: p.hasAttribute("ell"), r: p.hasAttribute("elr")
-                            },
-                            bore: tech[id]?.b || false,
-                            mill: tech[id]?.m || false
+                            edge: { t: p.hasAttribute("elt"), b: p.hasAttribute("elb"), l: p.hasAttribute("ell"), r: p.hasAttribute("elr") },
+                            bore: tech[id]?.b || false, mill: tech[id]?.m || false
                         });
                     }
                 }
@@ -155,52 +124,62 @@
 
     function render() {
         const grid = document.getElementById('grid');
-        document.getElementById('stats').innerText = `Деталей в очереди: ${queue.length}`;
         grid.innerHTML = '';
-
         queue.forEach((item, index) => {
             const card = document.createElement('div');
             card.className = 'card';
             card.innerHTML = `
-                <div class="status-icons">${item.bore ? '🔩' : ''} ${item.mill ? '🌀' : ''}</div>
+                <div class="icons">${item.bore ? '🔩' : ''} ${item.mill ? '🌀' : ''}</div>
                 <div class="p-name">${item.name}</div>
                 <div class="p-size">${item.l} × ${item.w}</div>
-                <div style="font-size: 10px; color: var(--accent); margin-top: 10px; font-weight:bold;">НАЖМИТЕ ДЛЯ ПЕЧАТИ</div>
+                <div class="click-hint">ПЕЧАТЬ</div>
             `;
-            card.onclick = () => startPrint(index);
+            card.onclick = () => printPart(index);
             grid.appendChild(card);
         });
     }
 
-    function startPrint(index) {
+    function printPart(index) {
         const item = queue[index];
-
-        // 1. Заполняем скрытую область печати данными
-        document.getElementById('p-project').innerText = "Проект: " + currentProject;
-        document.getElementById('p-name').innerText = item.name;
-        document.getElementById('p-material').innerText = "Мат: " + currentMaterial;
-        document.getElementById('p-size-val').innerText = `${item.l} x ${item.w}`;
-        document.getElementById('p-icons').innerText = (item.bore ? '🔩' : '') + (item.mill ? ' 🌀' : '');
+        
+        // Заполняем шаблон
+        document.getElementById('tpl-project').innerText = "Проект: " + projData.name;
+        document.getElementById('tpl-name').innerText = item.name;
+        document.getElementById('tpl-mat').innerText = "Мат: " + projData.mat;
+        document.getElementById('tpl-size').innerText = `${item.l} x ${item.w}`;
+        document.getElementById('tpl-icons').innerText = (item.bore ? '🔩' : '') + (item.mill ? ' 🌀' : '');
         
         const hasEdge = (item.edge.t || item.edge.b || item.edge.l || item.edge.r);
-        document.getElementById('p-edge-val').innerText = hasEdge ? "Кромка: " + currentEdge : "";
+        document.getElementById('tpl-edge').innerText = hasEdge ? "Кромка: " + projData.edge : "";
 
-        // 2. Рисуем рамку кромки
-        const box = document.getElementById('p-box');
-        box.className = 'size-box';
-        if (item.edge.t) box.classList.add('e-t');
-        if (item.edge.b) box.classList.add('e-b');
-        if (item.edge.l) box.classList.add('e-l');
-        if (item.edge.r) box.classList.add('e-r');
+        const box = document.getElementById('tpl-box');
+        box.style.borderTop = item.edge.t ? "6pt solid black" : "1pt solid #ccc";
+        box.style.borderBottom = item.edge.b ? "6pt solid black" : "1pt solid #ccc";
+        box.style.borderLeft = item.edge.l ? "6pt solid black" : "1pt solid #ccc";
+        box.style.borderRight = item.edge.r ? "6pt solid black" : "1pt solid #ccc";
 
-        // 3. Запуск печати
-        window.print();
+        // ПЕЧАТЬ ЧЕРЕЗ IFRAME (решает проблему пустого листа)
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '100%';
+        iframe.style.bottom = '100%';
+        document.body.appendChild(iframe);
+        
+        const doc = iframe.contentWindow.document;
+        doc.open();
+        doc.write('<html><body style="margin:0;">' + document.getElementById('print-template').innerHTML + '</body></html>');
+        doc.close();
 
-        // 4. Удаление из списка
-        queue.splice(index, 1);
-        render();
+        setTimeout(() => {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+            document.body.removeChild(iframe);
+            
+            // Удаляем из очереди только после закрытия окна печати
+            queue.splice(index, 1);
+            render();
+        }, 500);
     }
 </script>
-
 </body>
 </html>
