@@ -2,40 +2,54 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>GibLab: Очередь печати (XML)</title>
+    <title>Mustafayev Academy | Система управления производством</title>
     <style>
-        :root { --accent: #e74c3c; --bg: #121212; --card: #1e1e1e; --text: #ffffff; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        :root { --accent: #2ecc71; --bg: #121212; --card: #1e1e1e; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: #fff; margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
-        /* Шапка */
-        .header { background: #252525; padding: 15px 25px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid var(--accent); box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .logo { font-size: 22px; font-weight: bold; letter-spacing: 1px; }
+        /* Шапка Mustafayev Academy */
+        .header { background: #1a1a1a; padding: 15px 25px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid var(--accent); box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .logo { font-size: 20px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
         .logo span { color: var(--accent); }
-        .btn-load { background: var(--accent); color: white; border: none; padding: 12px 25px; cursor: pointer; font-weight: bold; border-radius: 5px; transition: 0.2s; }
-        .btn-load:hover { background: #c0392b; }
+        .btn-load { background: var(--accent); color: #000; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 4px; transition: 0.2s; }
+        .btn-load:hover { background: #27ae60; transform: scale(1.02); }
 
-        /* Контейнер для плиток */
-        .main-container { flex: 1; padding: 20px; overflow-y: auto; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; }
-
-        /* Карточка детали */
-        .card { 
-            background: var(--card); border: 1px solid #333; border-radius: 10px; padding: 20px; 
-            cursor: pointer; transition: 0.2s; text-align: center; position: relative;
-        }
-        .card:hover { border-color: var(--accent); transform: translateY(-3px); background: #252525; }
-        .card:active { transform: scale(0.95); }
+        .container { flex: 1; padding: 20px; overflow-y: auto; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
         
-        .p-name { color: #888; font-size: 13px; margin-bottom: 10px; height: 35px; overflow: hidden; }
-        .p-size { font-size: 32px; font-weight: bold; color: #fff; }
-        .p-status { font-size: 10px; color: var(--accent); margin-top: 10px; font-weight: bold; letter-spacing: 1px; }
+        /* Карточки */
+        .card { 
+            background: var(--card); border: 1px solid #333; border-radius: 8px; padding: 15px; 
+            cursor: pointer; position: relative; transition: 0.2s;
+        }
+        .card:hover { border-color: var(--accent); background: #252525; }
+        .p-name { font-size: 13px; color: #888; margin-bottom: 5px; height: 35px; overflow: hidden; }
+        .p-size { font-size: 30px; font-weight: bold; color: #fff; }
+        .icons-box { position: absolute; top: 10px; right: 10px; font-size: 20px; display: flex; gap: 5px; }
 
-        /* Печать (58мм) */
+        /* Этикетка на печать (58мм) */
         @media print {
             body * { display: none; }
-            #print-area { display: block !important; width: 58mm; color: black; text-align: center; padding: 5px; font-family: Arial; }
-            .pr-size { font-size: 24pt; font-weight: bold; margin: 5px 0; border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 5px 0; }
-            .pr-name { font-size: 11pt; margin-bottom: 5px; }
+            #print-area { display: block !important; width: 58mm; color: black; font-family: 'Arial', sans-serif; padding: 1mm; }
+            .pr-header { font-size: 9pt; font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 2px; margin-bottom: 4px; text-align: center; }
+            .pr-project { font-size: 7pt; margin-bottom: 2px; }
+            .pr-name { font-size: 10pt; font-weight: bold; margin-bottom: 2px; white-space: nowrap; overflow: hidden; }
+            .pr-mat { font-size: 7pt; margin-bottom: 4px; border-bottom: 0.5px solid #ccc; padding-bottom: 2px; }
+            
+            .size-box { 
+                font-size: 24pt; font-weight: bold; text-align: center; margin: 4px 0; padding: 4px;
+                border: 1px solid #ddd; position: relative;
+            }
+            /* Кромка жирными линиями */
+            .edge-t { border-top: 5px solid #000 !important; }
+            .edge-b { border-bottom: 5px solid #000 !important; }
+            .edge-l { border-left: 5px solid #000 !important; }
+            .edge-r { border-right: 5px solid #000 !important; }
+
+            .pr-footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 4px; }
+            .edge-text { font-size: 7pt; line-height: 1; max-width: 70%; }
+            .tech-icons { font-size: 14pt; }
+            .academy-mark { font-size: 6pt; text-align: center; margin-top: 5px; color: #666; font-style: italic; }
         }
         #print-area { display: none; }
     </style>
@@ -43,113 +57,154 @@
 <body>
 
 <div class="header">
-    <div class="logo">GIBLAB <span>MONITOR</span></div>
+    <div class="logo">MUSTAFAYEV <span>ACADEMY</span></div>
     <div style="display: flex; gap: 20px; align-items: center;">
-        <div id="stats">Ожидание файла...</div>
+        <div id="stats" style="font-size: 14px; color: #888;">Загрузите .project</div>
         <input type="file" id="fileInput" style="display:none" accept=".project">
-        <button class="btn-load" onclick="document.getElementById('fileInput').click()">ЗАГРУЗИТЬ ЗАКАЗ</button>
+        <button class="btn-load" onclick="document.getElementById('fileInput').click()">ОТКРЫТЬ ФАЙЛ</button>
     </div>
 </div>
 
-<div class="main-container">
+<div class="container">
     <div id="grid" class="grid"></div>
 </div>
 
 <div id="print-area">
-    <div class="pr-name" id="label-name">Название</div>
-    <div class="pr-size" id="label-size">000 x 000</div>
-    <div style="font-size: 9pt; margin-top: 5px;">GibLab Export System</div>
+    <div class="pr-header">Mustafayev Academy</div>
+    <div class="pr-project" id="lbl-project">-</div>
+    <div class="pr-name" id="lbl-name">-</div>
+    <div class="pr-mat" id="lbl-mat">-</div>
+    
+    <div id="lbl-size-box" class="size-box">
+        <span id="lbl-size">0 x 0</span>
+    </div>
+
+    <div class="pr-footer">
+        <div class="edge-text" id="lbl-edge-name"></div>
+        <div class="tech-icons" id="lbl-icons"></div>
+    </div>
+    <div class="academy-mark">Quality furniture system</div>
 </div>
 
 <script>
     let queue = [];
+    let projectTitle = "";
+    let mainMaterial = "";
+    let edgeMaterial = "";
 
     document.getElementById('fileInput').onchange = function(e) {
         const file = e.target.files[0];
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = function(event) {
-            try {
-                const parser = new DOMParser();
-                // Кодировка windows-1251 как в вашем XML
-                const xmlDoc = parser.parseFromString(event.target.result, "text/xml");
-                parseParts(xmlDoc);
-            } catch (err) {
-                alert("Ошибка: Неверный формат XML в файле .project");
-                console.error(err);
+        reader.onload = function(ev) {
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(ev.target.result, "text/xml");
+            
+            // 1. Получаем общую информацию
+            projectTitle = xml.querySelector("good[typeId='product']")?.getAttribute("name") || "Заказ";
+            mainMaterial = xml.querySelector("good[typeId='sheet']")?.getAttribute("name") || "ЛДСП";
+            edgeMaterial = xml.querySelector("good[typeId='band']")?.getAttribute("name") || "";
+
+            // 2. Определяем присадку и фрезеровку по ID деталей
+            const techMap = {};
+            const operations = xml.getElementsByTagName("operation");
+            for (let op of operations) {
+                if (op.getAttribute("typeId") === "XNC") {
+                    const prog = op.getAttribute("program") || "";
+                    const hasBore = prog.includes("Bore");
+                    const hasMill = prog.includes("Mill") || prog.includes("mac"); // mac - это дуги
+                    
+                    const partRefs = op.getElementsByTagName("part");
+                    for (let ref of partRefs) {
+                        const pid = ref.getAttribute("id");
+                        if (!techMap[pid]) techMap[pid] = { b: false, m: false };
+                        if (hasBore) techMap[pid].b = true;
+                        if (hasMill) techMap[pid].m = true;
+                    }
+                }
             }
+
+            // 3. Собираем очередь деталей
+            queue = [];
+            const parts = xml.getElementsByTagName("part");
+            for (let p of parts) {
+                // Берем только детали из разделов товаров (пропускаем листы и операции)
+                if (p.parentNode.nodeName === "good" && p.hasAttribute("dl")) {
+                    const id = p.getAttribute("id");
+                    const count = parseInt(p.getAttribute("count")) || 1;
+                    for (let c = 0; c < count; c++) {
+                        queue.push({
+                            id: id,
+                            name: p.getAttribute("name"),
+                            l: Math.round(parseFloat(p.getAttribute("dl"))),
+                            w: Math.round(parseFloat(p.getAttribute("dw"))),
+                            edge: {
+                                t: p.hasAttribute("elt"), b: p.hasAttribute("elb"),
+                                l: p.hasAttribute("ell"), r: p.hasAttribute("elr")
+                            },
+                            hasBore: techMap[id]?.b || false,
+                            hasMill: techMap[id]?.m || false
+                        });
+                    }
+                }
+            }
+            render();
         };
         reader.readAsText(file, "windows-1251");
     };
 
-    function parseParts(xml) {
-        queue = [];
-        const parts = xml.getElementsByTagName("part");
-
-        for (let i = 0; i < parts.length; i++) {
-            const p = parts[i];
-            
-            // Собираем данные из атрибутов вашего XML
-            const name = p.getAttribute("name");
-            const length = p.getAttribute("dl");
-            const width = p.getAttribute("dw");
-            const count = parseInt(p.getAttribute("count")) || 1;
-
-            // Добавляем деталь в очередь столько раз, сколько указано в count
-            if (name && length && width) {
-                for (let c = 0; c < count; c++) {
-                    queue.push({
-                        name: name,
-                        w: Math.round(parseFloat(length)),
-                        h: Math.round(parseFloat(width))
-                    });
-                }
-            }
-        }
-        render();
-    }
-
     function render() {
         const grid = document.getElementById('grid');
-        const stats = document.getElementById('stats');
+        document.getElementById('stats').innerText = `Деталей в работе: ${queue.length}`;
         grid.innerHTML = '';
 
         if (queue.length === 0) {
-            stats.innerText = "Очередь пуста";
-            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; margin-top:50px; color:#555;"><h3>Загрузите файл или завершите работу</h3></div>';
+            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#444; margin-top:100px;"><h2>Очередь пуста</h2></div>';
             return;
         }
 
-        stats.innerText = `Деталей в списке: ${queue.length}`;
-
-        queue.forEach((part, index) => {
+        queue.forEach((p, i) => {
             const card = document.createElement('div');
             card.className = 'card';
             card.innerHTML = `
-                <div class="p-name">${part.name}</div>
-                <div class="p-size">${part.w} × ${part.h}</div>
-                <div class="p-status">НАЖМИТЕ ДЛЯ ПЕЧАТИ</div>
+                <div class="icons-box">${p.hasBore ? '🔩' : ''} ${p.hasMill ? '🌀' : ''}</div>
+                <div class="p-name">${p.name}</div>
+                <div class="p-size">${p.l} × ${p.w}</div>
             `;
-            card.onclick = () => processPart(index);
+            card.onclick = () => printItem(i);
             grid.appendChild(card);
         });
     }
 
-    function processPart(index) {
-        const part = queue[index];
+    function printItem(i) {
+        const p = queue[i];
+        
+        // Заполнение шаблона
+        document.getElementById('lbl-project').innerText = `Проект: ${projectTitle}`;
+        document.getElementById('lbl-name').innerText = p.name;
+        document.getElementById('lbl-mat').innerText = mainMaterial;
+        document.getElementById('lbl-size').innerText = `${p.l} × ${p.w}`;
+        
+        // Кромка (текст)
+        const isEdged = (p.edge.t || p.edge.b || p.edge.l || p.edge.r);
+        document.getElementById('lbl-edge-name').innerText = isEdged ? `Кромка: ${edgeMaterial}` : "";
 
-        // 1. Установка данных в этикетку
-        document.getElementById('label-name').innerText = part.name;
-        document.getElementById('label-size').innerText = `${part.w} × ${part.h}`;
+        // Иконки
+        document.getElementById('lbl-icons').innerText = `${p.hasBore ? '🔩' : ''} ${p.hasMill ? '🌀' : ''}`;
 
-        // 2. Команда на печать
+        // Рамка кромки
+        const box = document.getElementById('lbl-size-box');
+        box.className = 'size-box';
+        if (p.edge.t) box.classList.add('edge-t');
+        if (p.edge.b) box.classList.add('edge-b');
+        if (p.edge.l) box.classList.add('edge-l');
+        if (p.edge.r) box.classList.add('edge-r');
+
         window.print();
 
-        // 3. Удаление из очереди (сдвиг)
-        queue.splice(index, 1);
-
-        // 4. Обновление экрана
+        // Удаление и обновление
+        queue.splice(i, 1);
         render();
     }
 </script>
