@@ -2,192 +2,194 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Mustafayev Academy | XML Cutting Terminal</title>
+    <title>Mustafayev Academy | BAZIS Terminal</title>
     <style>
         :root {
             --bg: #0f172a;
-            --panel: #1e293b;
+            --panel-bg: #1e293b;
             --accent: #10b981;
             --blue: #3b82f6;
             --text: #f8fafc;
         }
 
         body {
-            font-family: 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: var(--bg);
             color: var(--text);
             margin: 0; display: flex; flex-direction: column; height: 100vh;
         }
 
         header {
-            padding: 20px 40px;
-            background: var(--panel);
-            border-bottom: 2px solid var(--blue);
+            padding: 15px 40px;
+            background: var(--panel-bg);
+            border-bottom: 2px solid var(--accent);
             display: flex; justify-content: space-between; align-items: center;
         }
 
         .controls {
             padding: 20px 40px;
             background: rgba(30, 41, 59, 0.5);
-            display: flex; gap: 15px; align-items: center;
+            display: flex; gap: 20px; align-items: center;
         }
 
         .btn-load {
             background: var(--blue);
             color: white; padding: 12px 25px; border-radius: 8px;
-            cursor: pointer; font-weight: bold; border: none; transition: 0.2s;
+            cursor: pointer; font-weight: bold; border: none;
         }
 
-        .btn-load:hover { background: #2563eb; transform: scale(1.02); }
-
-        /* Рабочая зона */
+        /* Визуализация плит */
         .workspace {
             flex: 1;
-            display: flex; justify-content: center; align-items: center;
-            padding: 40px; overflow: auto;
+            padding: 40px;
+            overflow: auto;
+            display: flex; flex-direction: column; align-items: center; gap: 50px;
         }
 
-        #plate {
+        .sheet-container {
             position: relative;
             background: #334155;
             border: 2px solid #64748b;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
         .part {
             position: absolute;
             background: #475569;
-            border: 1px solid rgba(255,255,255,0.2);
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
+            border: 1px solid rgba(255,255,255,0.3);
+            display: flex; align-items: center; justify-content: center;
             cursor: pointer; transition: 0.2s;
-            overflow: hidden; font-size: 11px; text-align: center;
+            font-size: 10px; color: white; text-align: center;
+            box-sizing: border-box;
         }
 
-        .part:hover { background: #334155; border-color: var(--blue); z-index: 10; }
+        .part:hover { background: var(--blue); z-index: 10; transform: scale(1.02); }
+        .part.is-cut { background: var(--accent) !important; opacity: 0.6; }
 
-        /* Когда деталь порезана и нажата */
-        .part.is-cut {
-            background: var(--accent) !important;
-            opacity: 0.6;
+        .sheet-label {
+            position: absolute; top: -30px; left: 0;
+            color: var(--accent); font-weight: bold;
         }
 
         footer {
-            padding: 15px 40px;
-            text-align: right;
-            background: var(--panel);
-            font-size: 18px;
+            padding: 15px 40px; text-align: right;
+            background: var(--panel-bg); border-top: 1px solid #334155;
         }
-
         footer b { color: var(--accent); }
 
-        /* Печать */
         @media print {
             .no-print { display: none !important; }
             #print-area { display: block !important; }
         }
-        #print-area { display: none; color: black; font-family: Arial; }
+        #print-area { display: none; color: black; font-family: Arial; padding: 20px; text-align: center; }
     </style>
 </head>
 <body>
 
 <header class="no-print">
-    <h1>MUSTAFAYEV FACTORY <span style="font-weight: 200; font-size: 14px;">| XML IMPORT</span></h1>
+    <h1>MUSTAFAYEV FACTORY <span style="font-size: 14px; opacity: 0.7;">| BAZIS-CUTTING</span></h1>
     <div id="clock"></div>
 </header>
 
 <div class="controls no-print">
-    <label class="btn-load">📥 ИМПОРТ XML / CUT
-        <input type="file" id="fileInput" accept=".xml,.cut" style="display:none" onchange="handleFile(event)">
+    <label class="btn-load">📥 ЗАГРУЗИТЬ КАРТУ (.XML)
+        <input type="file" id="fileInput" accept=".xml" style="display:none" onchange="processBazisXml(event)">
     </label>
-    <div id="file-info" style="color: var(--blue)">Ожидание файла раскроя...</div>
+    <div id="material-info" style="color: var(--accent)">Загрузите файл раскроя</div>
 </div>
 
-<div class="workspace no-print">
-    <div id="plate"></div>
-</div>
+<div class="workspace no-print" id="workspace">
+    </div>
 
 <footer class="no-print">
     Mustafayev <b>Academy</b>
 </footer>
 
 <div id="print-area">
-    <div style="border: 2px solid black; padding: 15px; width: 60mm; margin: auto; text-align: center;">
-        <div style="border-bottom: 1px solid black; font-size: 10pt;">MUSTAFAYEV ACADEMY</div>
-        <h2 id="p-name" style="margin: 10px 0;"></h2>
-        <h1 id="p-size" style="font-size: 28pt; margin: 5px 0;"></h1>
-        <div id="p-order"></div>
-        <div id="p-date" style="font-size: 8pt; margin-top: 10px;"></div>
+    <div style="border: 2px solid black; padding: 10px; width: 60mm; margin: auto;">
+        <div style="font-size: 10pt; border-bottom: 1px solid #000;">MUSTAFAYEV ACADEMY</div>
+        <h2 id="p-name" style="margin: 10px 0; font-size: 16pt;"></h2>
+        <h1 id="p-size" style="font-size: 24pt; margin: 5px 0;"></h1>
+        <div id="p-mat" style="font-size: 10pt; margin-bottom: 5px;"></div>
+        <div id="p-date" style="font-size: 8pt; opacity: 0.8;"></div>
     </div>
 </div>
 
 <script>
     setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleTimeString(); }, 1000);
 
-    const SCALE = 0.4; // Масштаб отображения
+    const SCALE = 0.3; // 1мм = 0.3px
 
-    function handleFile(event) {
+    function processBazisXml(event) {
         const file = event.target.files[0];
         if (!file) return;
-        document.getElementById('file-info').innerText = "Файл: " + file.name;
 
         const reader = new FileReader();
         reader.onload = function(e) {
             const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
-            
-            // Пытаемся найти размеры основной плиты (Sheet)
-            const sheet = xmlDoc.getElementsByTagName("Sheet")[0] || xmlDoc.getElementsByTagName("Panel")[0];
-            const pW = sheet ? parseInt(sheet.getAttribute("Width")) : 2800;
-            const pH = sheet ? parseInt(sheet.getAttribute("Height")) : 2070;
-
-            renderLayout(xmlDoc, pW, pH);
+            const xml = parser.parseFromString(e.target.result, "text/xml");
+            renderWorkspace(xml);
         };
         reader.readAsText(file);
     }
 
-    function renderLayout(xml, pW, pH) {
-        const plate = document.getElementById('plate');
-        plate.innerHTML = '';
-        plate.style.width = (pW * SCALE) + 'px';
-        plate.style.height = (pH * SCALE) + 'px';
+    function renderWorkspace(xml) {
+        const workspace = document.getElementById('workspace');
+        workspace.innerHTML = '';
 
-        // Ищем все элементы деталей (в XML они часто называются Part или Item)
-        const parts = xml.getElementsByTagName("Part");
+        // Ищем все плиты (panel0, panel1...)
+        const panels = xml.querySelectorAll('[material]');
         
-        for (let i = 0; i < parts.length; i++) {
-            const p = parts[i];
-            const x = parseInt(p.getAttribute("X") || 0);
-            const y = parseInt(p.getAttribute("Y") || 0);
-            const w = parseInt(p.getAttribute("Width") || 0);
-            const h = parseInt(p.getAttribute("Height") || 0);
-            const name = p.getAttribute("Name") || "Деталь";
-            const order = p.getAttribute("Order") || "Заказ";
-
-            const div = document.createElement('div');
-            div.className = 'part';
-            div.style.left = (x * SCALE) + 'px';
-            div.style.top = (y * SCALE) + 'px';
-            div.style.width = (w * SCALE) + 'px';
-            div.style.height = (h * SCALE) + 'px';
+        panels.forEach((panel, pIdx) => {
+            const pL = parseInt(panel.getAttribute('l'));
+            const pW = parseInt(panel.getAttribute('w'));
+            const material = panel.getAttribute('material');
             
-            if (w > 80 && h > 40) {
-                div.innerHTML = `<b>${name}</b><br>${w}x${h}`;
+            document.getElementById('material-info').innerText = "Материал: " + material;
+
+            // Создаем контейнер плиты
+            const sheetCont = document.createElement('div');
+            sheetCont.className = 'sheet-container';
+            sheetCont.style.width = (pL * SCALE) + 'px';
+            sheetCont.style.height = (pW * SCALE) + 'px';
+            sheetCont.innerHTML = `<div class="sheet-label">ПЛИТА №${pIdx + 1} (${pL}x${pW})</div>`;
+
+            // Ищем детали внутри этой плиты (no.1, no.2...)
+            const parts = panel.children;
+            for (let part of parts) {
+                const l = parseFloat(part.getAttribute('l'));
+                const w = parseFloat(part.getAttribute('w'));
+                const x = parseFloat(part.getAttribute('x'));
+                const y = parseFloat(part.getAttribute('y'));
+                const id = part.getAttribute('id');
+
+                // Рисуем только те элементы, которые имеют размеры и координаты
+                if (l && w) {
+                    const div = document.createElement('div');
+                    div.className = 'part';
+                    div.style.left = (x * SCALE) + 'px';
+                    div.style.top = (y * SCALE) + 'px';
+                    div.style.width = (l * SCALE) + 'px';
+                    div.style.height = (w * SCALE) + 'px';
+
+                    // Если деталь большая, пишем размер
+                    if (l * SCALE > 40) div.innerText = l + 'x' + w;
+
+                    div.onclick = function() {
+                        this.classList.toggle('is-cut');
+                        printLabel("Деталь ID:" + id, l + 'x' + w, material);
+                    };
+                    sheetCont.appendChild(div);
+                }
             }
-
-            div.onclick = function() {
-                this.classList.toggle('is-cut');
-                printLabel(name, w + 'x' + h, order);
-            };
-
-            plate.appendChild(div);
-        }
+            workspace.appendChild(sheetCont);
+        });
     }
 
-    function printLabel(name, size, order) {
+    function printLabel(name, size, mat) {
         document.getElementById('p-name').innerText = name;
         document.getElementById('p-size').innerText = size;
-        document.getElementById('p-order').innerText = "ЗАКАЗ: " + order;
+        document.getElementById('p-mat').innerText = mat;
         document.getElementById('p-date').innerText = new Date().toLocaleString();
         window.print();
     }
