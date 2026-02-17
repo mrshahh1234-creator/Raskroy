@@ -2,233 +2,90 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Mustafayev Academy | GitLab Logic Terminal</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <title>Мини-GIBLAB Раскрой</title>
     <style>
-        :root {
-            --bg: #0d1117; --panel: #161b22; --accent: #238636; --blue: #2f81f7; --text: #c9d1d9;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-            background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh;
-        }
-        header {
-            padding: 10px 25px; background: var(--panel); border-bottom: 1px solid #30363d;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .main-layout { display: grid; grid-template-columns: 1fr 420px; flex: 1; overflow: hidden; }
-        
-        /* Секция визуализации (Раскрой) */
-        .viewport { padding: 20px; overflow: auto; background: #000; display: flex; flex-direction: column; align-items: center; }
-        .sheet { position: relative; background: #1c2128; border: 1px solid #444; margin-bottom: 50px; box-shadow: 0 0 40px rgba(0,0,0,0.8); }
-        .part {
-            position: absolute; background: rgba(47, 129, 247, 0.2); border: 1px solid #30363d;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            cursor: pointer; transition: 0.1s; color: #fff; font-size: 14px; box-sizing: border-box;
-        }
-        .part:hover { background: var(--blue); border-color: #fff; z-index: 10; }
-        .part.done { background: var(--accent) !important; opacity: 0.4; }
-
-        /* Столбец деталей (GitLab Logic) */
-        .sidebar { background: var(--panel); border-left: 1px solid #30363d; padding: 15px; overflow-y: auto; }
-        .detail-card {
-            background: #0d1117; border: 1px solid #30363d; margin-bottom: 10px; padding: 12px;
-            border-radius: 6px; cursor: pointer; transition: 0.2s;
-        }
-        .detail-card:hover { border-color: var(--blue); transform: translateX(-5px); }
-        .detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .pos-badge { background: #238636; color: white; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: bold; }
-
-        /* Обозначение кромки на превью */
-        .edge-mini { display: flex; gap: 4px; margin-top: 5px; }
-        .e-dot { width: 8px; height: 8px; border-radius: 50%; background: #30363d; }
-        .e-on { background: #f8e3a1; box-shadow: 0 0 5px #f8e3a1; }
-
-        /* Бирка для печати */
-        @media print { .no-print { display: none !important; } #print-area { display: block !important; } }
-        #print-area {
-            display: none; width: 80mm; height: 50mm; background: white; color: black;
-            padding: 5px; box-sizing: border-box; font-family: Arial, sans-serif;
-        }
-        .label-wrap { border: 2px solid #000; height: 100%; padding: 5px; display: grid; grid-template-columns: 1fr 110px; }
-        .edge-indicator { width: 60px; height: 40px; border: 1px solid #000; position: relative; margin: 10px 0; }
-        .eb-t { border-top: 5px solid #000; } .eb-b { border-bottom: 5px solid #000; }
-        .eb-l { border-left: 5px solid #000; } .eb-r { border-right: 5px solid #000; }
+        body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; background: #f0f2f5; }
+        .controls { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin: 20px; }
+        canvas { background: white; border: 2px solid #333; box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        input { width: 60px; margin-right: 10px; }
+        button { padding: 8px 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
+        button:hover { background: #0056b3; }
     </style>
 </head>
 <body>
 
-<header class="no-print">
-    <div style="font-weight: bold; font-size: 18px;">MUSTAFAYEV <span style="color:var(--blue)">GIT-LOGIC</span></div>
-    <label style="background: var(--blue); color: white; padding: 8px 20px; border-radius: 5px; cursor: pointer;">
-        📂 ИМПОРТ .PROJECT
-        <input type="file" id="fileIn" style="display:none" onchange="runPostProcessor(event)">
-    </label>
-</header>
+    <h2>Прототип системы раскроя (Nesting)</h2>
 
-<div class="main-layout no-print">
-    <div class="viewport" id="viewport">
-        <div style="color: #444; margin-top: 200px; text-align: center;">
-            <p style="font-size: 40px; margin: 0;">🛠️</p>
-            <p>Загрузите проект для запуска логики GitLab</p>
-        </div>
+    <div class="controls">
+        <b>Лист (мм):</b> 
+        W: <input type="number" id="sheetW" value="2800"> 
+        H: <input type="number" id="sheetH" value="2070">
+        <br><br>
+        <b>Деталь (мм):</b> 
+        w: <input type="number" id="partW" value="400"> 
+        h: <input type="number" id="partH" value="300">
+        Кол-во: <input type="number" id="partCount" value="15">
+        <button onclick="runNesting()">Рассчитать раскрой</button>
     </div>
-    
-    <div class="sidebar" id="sidebar">
-        <h3 style="margin: 0 0 15px 0; font-size: 16px; color: var(--blue);">ОЧЕРЕДЬ ПРОИЗВОДСТВА</h3>
-        <div id="listContainer"></div>
-    </div>
-</div>
 
-<footer class="no-print" style="padding: 10px 25px; background: var(--panel); border-top: 1px solid #30363d; text-align: right; font-size: 12px;">
-    Mustafayev Academy Post-Processor v5.0
-</footer>
+    <canvas id="nestingCanvas"></canvas>
 
-<div id="print-area">
-    <div class="label-wrap">
-        <div>
-            <div style="font-size: 7pt; font-weight: bold;">MUSTAFAYEV ACADEMY</div>
-            <div id="b-name" style="font-size: 10pt; font-weight: bold; margin: 3px 0;">Наименование</div>
-            <div id="b-size" style="font-size: 24pt; font-weight: 900; letter-spacing: -1px;">000 x 000</div>
-            <div id="b-mat" style="font-size: 7pt; height: 20px; overflow: hidden;">Материал</div>
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <div class="edge-indicator" id="b-edge-vis"></div>
-                <div style="font-size: 8pt; font-weight: bold;">КРОМКА<br><span id="b-edge-txt" style="font-size: 7pt; font-weight: normal;">-</span></div>
-            </div>
-        </div>
-        <div style="display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end;">
-            <div id="b-qr"></div>
-            <div style="text-align: right;">
-                <div id="b-pos" style="font-size: 10pt; font-weight: bold;">01.01</div>
-                <div id="b-id" style="font-size: 16pt; font-weight: 900;">№1</div>
-            </div>
-        </div>
-    </div>
-</div>
+    <script>
+        function runNesting() {
+            const sw = parseInt(document.getElementById('sheetW').value);
+            const sh = parseInt(document.getElementById('sheetH').value);
+            const pw = parseInt(document.getElementById('partW').value);
+            const ph = parseInt(document.getElementById('partH').value);
+            const count = parseInt(document.getElementById('partCount').value);
 
-<script>
-    const SCALE = 0.35;
+            const canvas = document.getElementById('nestingCanvas');
+            const ctx = canvas.getContext('2d');
 
-    async function runPostProcessor(event) {
-        const file = event.target.files[0];
-        const text = await file.text();
-        const parser = new DOMParser();
-        const xml = parser.parseFromString(text, "text/xml");
+            // Масштабирование для отображения на экране
+            const scale = Math.min(800 / sw, 600 / sh);
+            canvas.width = sw * scale;
+            canvas.height = sh * scale;
 
-        // Главная логика GitLab: Сборка всех данных в один массив
-        const parts = [];
-        const partNodes = xml.querySelectorAll('part');
-        
-        partNodes.forEach(p => {
-            parts.push({
-                id: p.getAttribute('id'),
-                name: p.getAttribute('name'),
-                l: parseFloat(p.getAttribute('dl')),
-                w: parseFloat(p.getAttribute('dw')),
-                pos: p.getAttribute('part.designation') || '00.00',
-                // Кромка: GitLab logic ищет @operation
-                edges: {
-                    t: p.getAttribute('elt') ? true : false,
-                    b: p.getAttribute('elb') ? true : false,
-                    l: p.getAttribute('ell') ? true : false,
-                    r: p.getAttribute('elr') ? true : false
-                },
-                // Присадка: ищем внутри тега part или по id
-                drill: p.innerHTML.includes('bf') || p.innerHTML.includes('br')
-            });
-        });
+            // Алгоритм упаковки (Shelf Packing - полочный метод)
+            let currentX = 0;
+            let currentY = 0;
+            let shelfHeight = 0;
+            let packedCount = 0;
 
-        // Сортировка по столбцу (по позиции)
-        parts.sort((a, b) => a.pos.localeCompare(b.pos));
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = "#333";
+            ctx.lineWidth = 1;
 
-        renderInterface(parts);
-    }
+            for (let i = 0; i < count; i++) {
+                // Проверяем, помещается ли деталь по ширине
+                if (currentX + pw > sw) {
+                    currentX = 0;
+                    currentY += shelfHeight;
+                    shelfHeight = 0;
+                }
 
-    function renderInterface(parts) {
-        const viewport = document.getElementById('viewport');
-        const listContainer = document.getElementById('listContainer');
-        viewport.innerHTML = '';
-        listContainer.innerHTML = '';
+                // Проверяем, помещается ли по высоте
+                if (currentY + ph > sh) {
+                    console.log("Место закончилось!");
+                    break;
+                }
 
-        // Рисуем плиту (Лист 1)
-        const sheet = document.createElement('div');
-        sheet.className = 'sheet';
-        sheet.style.width = (2750 * SCALE) + 'px';
-        sheet.style.height = (1830 * SCALE) + 'px';
-        viewport.appendChild(sheet);
+                // Рисуем деталь
+                ctx.fillStyle = `hsl(${(i * 45) % 360}, 70%, 60%)`;
+                ctx.fillRect(currentX * scale, currentY * scale, pw * scale, ph * scale);
+                ctx.strokeRect(currentX * scale, currentY * scale, pw * scale, ph * scale);
 
-        parts.forEach((p, index) => {
-            // 1. Создаем карточку в правом столбце
-            const card = document.createElement('div');
-            card.className = 'detail-card';
-            card.innerHTML = `
-                <div class="detail-header">
-                    <span class="pos-badge">${p.pos}</span>
-                    <span style="font-weight:bold">№${p.id}</span>
-                </div>
-                <div style="font-size:14px">${p.name}</div>
-                <div style="font-size:12px; color:#8b949e">${p.l} x ${p.w} мм</div>
-                <div class="edge-mini">
-                    <div class="e-dot ${p.edges.t?'e-on':''}"></div>
-                    <div class="e-dot ${p.edges.l?'e-on':''}"></div>
-                    <div class="e-dot ${p.edges.b?'e-on':''}"></div>
-                    <div class="e-dot ${p.edges.r?'e-on':''}"></div>
-                </div>
-            `;
-            listContainer.appendChild(card);
+                // Обновляем координаты для следующей детали
+                currentX += pw;
+                shelfHeight = Math.max(shelfHeight, ph);
+                packedCount++;
+            }
 
-            // 2. Отрисовка на карте (Логика расстановки)
-            const div = document.createElement('div');
-            div.className = 'part';
-            div.style.width = (p.l * SCALE) + 'px';
-            div.style.height = (p.w * SCALE) + 'px';
-            
-            // Симуляция раскроя (GitLab Logic обычно получает координаты из другого блока, 
-            // здесь мы имитируем порядок)
-            div.style.left = ((index % 4) * 600 * SCALE) + 'px';
-            div.style.top = (Math.floor(index / 4) * 600 * SCALE) + 'px';
-            div.innerHTML = `<span>${p.id}</span><div style="font-size:8px">${p.pos}</div>`;
+            alert(`Размещено деталей: ${packedCount} из ${count}`);
+        }
 
-            const action = () => {
-                div.classList.add('done');
-                printLabel(p);
-            };
-
-            div.onclick = action;
-            card.onclick = action;
-
-            sheet.appendChild(div);
-        });
-    }
-
-    function printLabel(p) {
-        document.getElementById('b-name').innerText = p.name;
-        document.getElementById('b-size').innerText = `${p.l} x ${p.w}`;
-        document.getElementById('b-mat').innerText = "Mustafayev Project: " + p.pos;
-        document.getElementById('b-id').innerText = "№" + p.id;
-        document.getElementById('b-pos').innerText = p.pos;
-
-        // Кромка на бирке
-        const vis = document.getElementById('b-edge-vis');
-        vis.className = "edge-indicator";
-        if(p.edges.t) vis.classList.add('eb-t');
-        if(p.edges.b) vis.classList.add('eb-b');
-        if(p.edges.l) vis.classList.add('eb-l');
-        if(p.edges.r) vis.classList.add('eb-r');
-        
-        document.getElementById('b-edge-txt').innerText = 
-            (p.edges.t?'Т ':'') + (p.edges.b?'Н ':'') + (p.edges.l?'Л ':'') + (p.edges.r?'П':'');
-
-        // QR Код с логикой присадки
-        const qrDiv = document.getElementById('b-qr');
-        qrDiv.innerHTML = '';
-        new QRCode(qrDiv, {
-            text: `JSON:{"id":"${p.id}","pos":"${p.pos}","drill":"${p.drill}"}`,
-            width: 100, height: 100
-        });
-
-        setTimeout(() => { window.print(); }, 250);
-    }
-</script>
+        // Запуск при загрузке
+        window.onload = runNesting;
+    </script>
 </body>
 </html>
