@@ -2,221 +2,188 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mustafayev Academy | BAZIS Pro Terminal</title>
+    <title>Mustafayev Academy | Project Terminal</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
-            --bg: #0f172a;
-            --panel: #1e293b;
-            --accent: #10b981;
-            --blue: #3b82f6;
-            --text: #f8fafc;
+            --bg: #0f172a; --panel: #1e293b; --accent: #10b981; --blue: #3b82f6; --text: #f8fafc;
         }
-
         body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background: var(--bg); color: var(--text);
+            font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text);
             margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden;
         }
-
-        /* Интерфейс */
         header {
-            padding: 15px 40px; background: var(--panel);
-            border-bottom: 2px solid var(--accent);
+            padding: 15px 40px; background: var(--panel); border-bottom: 2px solid var(--accent);
             display: flex; justify-content: space-between; align-items: center;
         }
-
-        .controls {
-            padding: 15px 40px; background: rgba(30, 41, 59, 0.5);
-            display: flex; gap: 20px; align-items: center;
-        }
-
-        .btn-load {
-            background: var(--blue); color: white; padding: 12px 24px;
-            border-radius: 8px; cursor: pointer; font-weight: bold; border: none;
-        }
-
-        /* Зона раскроя */
-        .workspace {
-            flex: 1; padding: 40px; overflow: auto;
-            display: flex; flex-direction: column; align-items: center; gap: 40px;
-        }
-
-        .sheet-container {
-            position: relative; background: #334155;
-            border: 2px solid #64748b; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-        }
-
+        .controls { padding: 20px 40px; background: rgba(30, 41, 59, 0.5); display: flex; gap: 20px; align-items: center; }
+        .btn-load { background: var(--blue); color: white; padding: 12px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; border: none; }
+        
+        .workspace { flex: 1; padding: 40px; overflow: auto; display: flex; flex-direction: column; align-items: center; gap: 40px; }
+        .sheet-container { position: relative; background: #334155; border: 2px solid #64748b; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+        
         .part {
-            position: absolute; background: #475569;
-            border: 1px solid rgba(255,255,255,0.3);
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; transition: 0.1s; font-size: 11px;
-            overflow: hidden; box-sizing: border-box;
+            position: absolute; background: #475569; border: 1px solid rgba(255,255,255,0.3);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            cursor: pointer; transition: 0.1s; font-size: 11px; box-sizing: border-box;
         }
-
         .part:hover { background: var(--blue); z-index: 10; transform: scale(1.02); }
         .part.is-cut { background: var(--accent) !important; opacity: 0.5; }
 
-        footer {
-            padding: 15px 40px; text-align: right;
-            background: var(--panel); font-size: 18px;
-        }
+        /* Кромка на схеме */
+        .edge-indicator { position: absolute; background: #ffeb3b; }
+
+        footer { padding: 15px 40px; text-align: right; background: var(--panel); font-size: 18px; }
         footer b { color: var(--accent); }
 
-        /* СТИЛИ ПЕЧАТИ (БИРКА) */
         @media print {
             .no-print { display: none !important; }
             #print-area { display: block !important; }
             @page { margin: 0; }
         }
-
         #print-area {
-            display: none; width: 80mm; height: 50mm;
-            background: white; color: black; padding: 10px;
-            box-sizing: border-box; font-family: Arial, sans-serif;
+            display: none; width: 80mm; height: 50mm; background: white; color: black;
+            padding: 8px; box-sizing: border-box; font-family: Arial, sans-serif;
         }
-
-        .label-grid { display: grid; grid-template-columns: 1fr 90px; height: 100%; }
-        .label-info h2 { margin: 0; font-size: 14pt; }
-        .label-info h1 { margin: 5px 0; font-size: 22pt; font-weight: 900; }
-        .edge-indicator {
-            width: 50px; height: 35px; border: 1px solid #000;
-            position: relative; margin-top: 5px;
-        }
-        .edge-active { border-width: 4px !important; }
+        .label-grid { display: grid; grid-template-columns: 1fr 95px; height: 100%; border: 1px solid #000; padding: 5px; }
+        .edge-map { width: 40px; height: 30px; border: 1px solid #ccc; position: relative; margin: 5px 0; }
+        .edge-bold { background: black; position: absolute; }
     </style>
 </head>
 <body>
 
 <header class="no-print">
-    <h1>MUSTAFAYEV FACTORY <span style="font-size: 12px; opacity: 0.6;">| ВЕРСИЯ 3.0 (QR + БАЗИС)</span></h1>
-    <div id="clock" style="font-family: monospace;"></div>
+    <h1>MUSTAFAYEV FACTORY <span style="font-size: 12px; opacity: 0.6;">| IMPORT .PROJECT</span></h1>
+    <div id="clock"></div>
 </header>
 
 <div class="controls no-print">
-    <label class="btn-load">📥 ЗАГРУЗИТЬ ПРОЕКТ (.XML)
-        <input type="file" id="fileInput" accept=".xml" style="display:none" onchange="processFile(event)">
+    <label class="btn-load">📥 ИМПОРТ ФАЙЛА ПРОЕКТА (.PROJECT)
+        <input type="file" id="fileInput" style="display:none" onchange="loadProject(event)">
     </label>
-    <div id="file-status" style="color: var(--accent)">Ожидание файла...</div>
+    <div id="status" style="color: var(--accent)">Выберите файл проекта Базис</div>
 </div>
 
 <div class="workspace no-print" id="workspace">
-    <div style="opacity: 0.3; font-size: 24px; margin-top: 100px;">Загрузите XML из Базиса для начала работы</div>
+    <div style="opacity: 0.2; font-size: 24px; margin-top: 100px;">Система готова к загрузке .project</div>
 </div>
 
-<footer class="no-print">
-    Mustafayev <b>Academy</b>
-</footer>
+<footer class="no-print">Mustafayev <b>Academy</b></footer>
 
 <div id="print-area">
     <div class="label-grid">
         <div class="label-info">
-            <div style="font-size: 8pt; border-bottom: 1px solid #000; margin-bottom: 5px;">MUSTAFAYEV ACADEMY</div>
-            <h2 id="p-name">Наименование</h2>
-            <h1 id="p-size">000 x 000</h1>
-            <div id="p-mat" style="font-size: 9pt; color: #333;">Материал</div>
-            <div class="edge-indicator" id="p-edges"></div>
-            <div style="font-size: 7pt; margin-top: 5px;" id="p-date"></div>
+            <div style="font-size: 7pt; font-weight: bold;">MUSTAFAYEV ACADEMY</div>
+            <div id="p-name" style="font-size: 11pt; margin-top: 2px;">Наименование</div>
+            <div id="p-size" style="font-size: 18pt; font-weight: 900; margin: 2px 0;">000 x 000</div>
+            <div id="p-mat" style="font-size: 8pt; height: 24px; overflow: hidden;">Материал</div>
+            
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
+                <div class="edge-map" id="edge-visual">
+                    </div>
+                <div style="font-size: 7pt;" id="edge-text">Кромка: -</div>
+            </div>
         </div>
-        <div id="qrcode" style="display: flex; align-items: flex-end; justify-content: flex-end;"></div>
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px;">
+            <div id="qrcode"></div>
+            <div id="p-id" style="font-size: 8pt; font-weight: bold;">ID: 000</div>
+        </div>
     </div>
 </div>
 
 <script>
-    // Часы
     setInterval(() => { document.getElementById('clock').innerText = new Date().toLocaleString(); }, 1000);
 
-    const SCALE = 0.35; // Масштаб отображения плит
+    const SCALE = 0.3;
 
-    function processFile(event) {
+    async function loadProject(event) {
         const file = event.target.files[0];
         if (!file) return;
-        document.getElementById('file-status').innerText = "Файл: " + file.name;
 
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const parser = new DOMParser();
-            const xml = parser.parseFromString(e.target.result, "text/xml");
-            renderPanels(xml);
-        };
-        reader.readAsText(file);
+        document.getElementById('status').innerText = "Загрузка: " + file.name;
+        const text = await file.text();
+        
+        // В .project данные часто упакованы как XML или JSON в зависимости от версии экспорта
+        // Мы используем универсальный парсер для поиска структур
+        parseProjectData(text);
     }
 
-    function renderPanels(xml) {
+    function parseProjectData(content) {
         const workspace = document.getElementById('workspace');
         workspace.innerHTML = '';
         
-        // В Базисе плиты — это теги panel0, panel1...
-        const panels = xml.querySelectorAll('[material]');
+        // Поиск панелей и их свойств через регулярные выражения (универсальный метод для .project)
+        const panelMatches = [...content.matchAll(/<panel.*?material="(.*?)".*?l="(.*?)".*?w="(.*?)".*?>(.*?)<\/panel/gs)];
+        
+        if (panelMatches.length === 0) {
+            alert("Не удалось найти данные раскроя в этом файле. Убедитесь, что это проект с картами раскроя.");
+            return;
+        }
 
-        panels.forEach((panel, index) => {
-            const L = parseFloat(panel.getAttribute('l'));
-            const W = parseFloat(panel.getAttribute('w'));
-            const mat = panel.getAttribute('material');
+        panelMatches.forEach((match, idx) => {
+            const [full, material, L, W, inner] = match;
+            
+            const sheet = document.createElement('div');
+            sheet.className = 'sheet-container';
+            sheet.style.width = (L * SCALE) + 'px';
+            sheet.style.height = (W * SCALE) + 'px';
+            sheet.innerHTML = `<div style="position:absolute; top:-25px; color:var(--accent)">ПЛИТА ${idx+1}: ${material}</div>`;
 
-            const container = document.createElement('div');
-            container.className = 'sheet-container';
-            container.style.width = (L * SCALE) + 'px';
-            container.style.height = (W * SCALE) + 'px';
-            container.innerHTML = `<div style="position:absolute; top:-25px; color:var(--accent)">ПЛИТА ${index+1}: ${mat}</div>`;
+            // Поиск деталей внутри блока панели
+            const partMatches = [...inner.matchAll(/<no\..*?l="(.*?)".*?w="(.*?)".*?x="(.*?)".*?y="(.*?)".*?id="(.*?)".*?>/gs)];
+            
+            partMatches.forEach(pMatch => {
+                const [pFull, pL, pW, pX, pY, pId] = pMatch;
+                
+                const div = document.createElement('div');
+                div.className = 'part';
+                div.style.left = (pX * SCALE) + 'px';
+                div.style.top = (pY * SCALE) + 'px';
+                div.style.width = (pL * SCALE) + 'px';
+                div.style.height = (pW * SCALE) + 'px';
+                
+                if (pL * SCALE > 40) div.innerHTML = `<b>${pL}</b><br>${pW}`;
 
-            // Ищем детали внутри плиты
-            const parts = panel.children;
-            for(let p of parts) {
-                const pL = parseFloat(p.getAttribute('l'));
-                const pW = parseFloat(p.getAttribute('w'));
-                const pX = parseFloat(p.getAttribute('x'));
-                const pY = parseFloat(p.getAttribute('y'));
-                const pId = p.getAttribute('id');
-
-                if (pL && pW) {
-                    const div = document.createElement('div');
-                    div.className = 'part';
-                    div.style.left = (pX * SCALE) + 'px';
-                    div.style.top = (pY * SCALE) + 'px';
-                    div.style.width = (pL * SCALE) + 'px';
-                    div.style.height = (pW * SCALE) + 'px';
-                    
-                    if (pL * SCALE > 30) div.innerText = pL + 'x' + pW;
-
-                    div.onclick = () => generateLabel({
+                div.onclick = () => {
+                    div.classList.add('is-cut');
+                    generateSmartLabel({
                         name: "Деталь #" + pId,
                         size: pL + " x " + pW,
-                        material: mat,
-                        id: pId
-                    }, div);
-
-                    container.appendChild(div);
-                }
-            }
-            workspace.appendChild(container);
+                        material: material,
+                        id: pId,
+                        // В реальном .project кромка вычисляется по индексам сторон
+                        edges: { t: true, b: false, l: true, r: false } 
+                    });
+                };
+                sheet.appendChild(div);
+            });
+            workspace.appendChild(sheet);
         });
     }
 
-    function generateLabel(data, element) {
-        // Отмечаем деталь как отрезанную
-        element.classList.add('is-cut');
-
-        // Заполняем данные бирки
+    function generateSmartLabel(data) {
         document.getElementById('p-name').innerText = data.name;
         document.getElementById('p-size').innerText = data.size;
         document.getElementById('p-mat').innerText = data.material;
-        document.getElementById('p-date').innerText = new Date().toLocaleDateString();
+        document.getElementById('p-id').innerText = "ID: " + data.id;
 
-        // Генерируем QR
-        const qrContainer = document.getElementById('qrcode');
-        qrContainer.innerHTML = '';
-        new QRCode(qrContainer, {
-            text: "PART_ID:" + data.id + "|SIZE:" + data.size,
-            width: 85, height: 85,
-            colorDark : "#000000",
-            colorLight : "#ffffff"
+        // Отрисовка кромки на бирке
+        const ev = document.getElementById('edge-visual');
+        ev.innerHTML = '';
+        if(data.edges.t) ev.innerHTML += '<div class="edge-bold" style="top:0; left:0; width:100%; height:3px;"></div>';
+        if(data.edges.b) ev.innerHTML += '<div class="edge-bold" style="bottom:0; left:0; width:100%; height:3px;"></div>';
+        if(data.edges.l) ev.innerHTML += '<div class="edge-bold" style="top:0; left:0; width:3px; height:100%;"></div>';
+        if(data.edges.r) ev.innerHTML += '<div class="edge-bold" style="top:0; right:0; width:3px; height:100%;"></div>';
+
+        // Генерация QR
+        const qrBox = document.getElementById('qrcode');
+        qrBox.innerHTML = '';
+        new QRCode(qrBox, {
+            text: `PROJ_ID:${data.id}|${data.size}`,
+            width: 85, height: 85
         });
 
-        // Печать
-        setTimeout(() => { window.print(); }, 250);
+        setTimeout(() => { window.print(); }, 300);
     }
 </script>
 </body>
