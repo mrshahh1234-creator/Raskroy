@@ -2,184 +2,198 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Mustafayev Academy | Pro Project Terminal</title>
+    <title>Mustafayev Academy | Integrated Post-Processor</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
-            --bg: #0f172a; --panel: #1e293b; --accent: #10b981; --blue: #3b82f6; --text: #f8fafc;
+            --bg: #0b0f1a; --panel: #161e2e; --accent: #10b981; --blue: #3b82f6; --text: #f1f5f9;
         }
         body {
-            font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text);
+            font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text);
             margin: 0; display: flex; flex-direction: column; height: 100vh; overflow: hidden;
         }
         header {
-            padding: 10px 30px; background: var(--panel); border-bottom: 2px solid var(--accent);
+            padding: 15px 30px; background: var(--panel); border-bottom: 2px solid var(--blue);
             display: flex; justify-content: space-between; align-items: center;
         }
-        .main-layout { display: grid; grid-template-columns: 1fr 350px; flex: 1; overflow: hidden; }
+        .main-container { display: grid; grid-template-columns: 1fr 400px; flex: 1; overflow: hidden; }
         
-        /* Карта раскроя */
-        .canvas-area { padding: 20px; overflow: auto; display: flex; flex-direction: column; align-items: center; background: #111827; }
-        .sheet { position: relative; background: #334155; border: 2px solid #4b5563; margin-bottom: 50px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+        /* Экран раскроя */
+        .viewport { padding: 30px; overflow: auto; background: #000; display: flex; flex-direction: column; align-items: center; }
+        .sheet { position: relative; background: #242f42; border: 1px solid #334155; margin-bottom: 40px; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
         .part {
-            position: absolute; background: rgba(71, 85, 105, 0.9); border: 1px solid rgba(255,255,255,0.2);
+            position: absolute; background: rgba(59, 130, 246, 0.3); border: 1px solid rgba(255,255,255,0.2);
             display: flex; align-items: center; justify-content: center; cursor: pointer;
-            transition: 0.1s; font-size: 12px; font-weight: bold; color: white;
+            transition: 0.1s; font-size: 13px; font-weight: 700; color: white;
         }
-        .part:hover { background: var(--blue); z-index: 5; outline: 3px solid white; }
-        .part.selected { background: var(--accent) !important; outline: 3px solid var(--accent); }
+        .part:hover { background: var(--blue); outline: 2px solid #fff; z-index: 5; }
+        .part.cut { background: var(--accent) !important; opacity: 0.5; }
 
-        /* Панель данных (Столбец деталей) */
-        .info-panel {
-            background: var(--panel); border-left: 1px solid #334155; padding: 20px;
-            display: flex; flex-direction: column; gap: 15px; overflow-y: auto;
+        /* Список деталей (Постпроцессор) */
+        .sidebar { background: var(--panel); border-left: 1px solid #1e293b; padding: 20px; overflow-y: auto; }
+        .detail-row {
+            background: #1f2937; margin-bottom: 8px; padding: 12px; border-radius: 8px;
+            display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+            border: 1px solid transparent;
         }
-        .detail-item {
-            background: #2d3748; padding: 10px; border-radius: 6px; cursor: pointer;
-            border-left: 4px solid var(--blue); transition: 0.2s;
-        }
-        .detail-item:hover { background: #4a5568; }
-        .detail-item.active { border-left-color: var(--accent); background: #1a202c; }
+        .detail-row:hover { border-color: var(--blue); }
+        .detail-id { background: var(--blue); padding: 4px 10px; border-radius: 4px; font-weight: 900; }
 
-        /* Бирка */
-        #print-area {
-            display: none; width: 80mm; height: 50mm; background: white; color: black;
-            padding: 10px; box-sizing: border-box; font-family: Arial; border: 1px solid #000;
-        }
-        .label-content { display: grid; grid-template-columns: 1fr 100px; height: 100%; }
-        .edge-box { width: 60px; height: 40px; border: 1px solid #000; position: relative; margin: 10px 0; }
-        .edge-t { border-top: 4px solid #000; } .edge-b { border-bottom: 4px solid #000; }
-        .edge-l { border-left: 4px solid #000; } .edge-r { border-right: 4px solid #000; }
+        /* Кромка на бирке */
+        .edge-box { width: 50px; height: 35px; border: 1px solid #ccc; position: relative; margin: 5px 0; }
+        .e-active { background: #000; position: absolute; }
 
-        .btn-load { background: var(--accent); color: white; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        /* Печать */
+        @media print { .no-print { display: none !important; } #print-label { display: block !important; } }
+        #print-label {
+            display: none; width: 80mm; height: 50mm; background: #fff; color: #000;
+            padding: 8px; box-sizing: border-box; font-family: 'Arial Narrow', Arial;
+        }
+        .label-grid { display: grid; grid-template-columns: 1fr 100px; height: 100%; border: 1px solid #000; padding: 5px; }
+
+        .btn { background: var(--blue); color: #fff; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <header class="no-print">
-    <h2>MUSTAFAYEV ACADEMY <span style="font-weight: 200; font-size: 14px;">| ИНТЕРФЕЙС РАСКРОЯ</span></h2>
-    <label class="btn-load">📂 ОТКРЫТЬ ПРОЕКТ<input type="file" id="fileInput" style="display:none" onchange="handleFile(event)"></label>
+    <div style="font-size: 20px; font-weight: 900; letter-spacing: 1px;">MUSTAFAYEV <span style="color:var(--accent)">ACADEMY</span></div>
+    <label class="btn">🚀 ЗАГРУЗИТЬ PROJECT
+        <input type="file" id="projInput" style="display:none" onchange="processProject(event)">
+    </label>
 </header>
 
-<div class="main-layout no-print">
-    <div class="canvas-area" id="canvas">
-        <div style="margin-top: 200px; opacity: 0.3;">Загрузите файл .project или .xml для отображения карт</div>
+<div class="main-container no-print">
+    <div class="viewport" id="viewport">
+        <div style="margin-top:200px; color: var(--blue); font-size: 18px;">Перетащите файл .project сюда для обработки</div>
     </div>
     
-    <div class="info-panel" id="detailList">
-        <h3 style="color: var(--accent); border-bottom: 1px solid #334155; padding-bottom: 10px;">Список деталей</h3>
-        </div>
+    <div class="sidebar" id="sidebar">
+        <h3 style="margin-top:0; color:var(--accent)">Обработанные детали</h3>
+        <div id="partsList"></div>
+    </div>
 </div>
 
-<footer class="no-print" style="padding: 10px 30px; background: var(--panel); text-align: right; border-top: 1px solid #334155;">
-    Mustafayev <b>Academy</b>
-</footer>
-
-<div id="print-area">
-    <div class="label-content">
+<div id="print-label">
+    <div class="label-grid">
         <div>
-            <div style="font-size: 8pt; font-weight: bold; border-bottom: 1px solid #000;">MUSTAFAYEV ACADEMY</div>
-            <div id="l-name" style="font-size: 12pt; margin: 5px 0;">Деталь</div>
-            <div id="l-size" style="font-size: 20pt; font-weight: 900;">000 x 000</div>
-            <div id="l-mat" style="font-size: 8pt; margin-top: 5px;">Материал</div>
-            <div class="edge-box" id="l-edges"></div>
-            <div id="l-info" style="font-size: 7pt;">Присадка: Есть</div>
+            <div style="font-size: 8pt; font-weight: bold; text-align: center; border-bottom: 1px solid #000;">MUSTAFAYEV ACADEMY</div>
+            <div id="l-name" style="font-size: 10pt; margin: 4px 0; white-space: nowrap; overflow: hidden;">Название</div>
+            <div id="l-size" style="font-size: 22pt; font-weight: 900; letter-spacing: -1px;">000 x 000</div>
+            <div id="l-mat" style="font-size: 7pt; margin-bottom: 4px;">Материал</div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="edge-box" id="l-edge-vis"></div>
+                <div style="font-size: 7pt;">Кромка:<br><span id="l-edge-text">-</span></div>
+            </div>
         </div>
-        <div style="text-align: right; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end;">
+        <div style="display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end;">
             <div id="l-qr"></div>
-            <div id="l-id" style="font-weight: bold; font-size: 10pt;">№0</div>
+            <div id="l-id" style="font-size: 14pt; font-weight: 900; border: 2px solid #000; padding: 0 5px;">№1</div>
         </div>
     </div>
 </div>
 
 <script>
-    const SCALE = 0.3; 
-    let projectData = [];
+    const SCALE = 0.35;
 
-    async function handleFile(event) {
+    async function processProject(event) {
         const file = event.target.files[0];
+        if (!file) return;
+
         const text = await file.text();
         const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(text, "text/xml");
-        
-        renderProject(xmlDoc);
+        const xml = parser.parseFromString(text, "text/xml");
+
+        renderApp(xml);
     }
 
-    function renderProject(xml) {
-        const canvas = document.getElementById('canvas');
-        const detailList = document.getElementById('detailList');
-        canvas.innerHTML = '';
-        detailList.innerHTML = '<h3 style="color: var(--accent); border-bottom: 1px solid #334155; padding-bottom: 10px;">Список деталей</h3>';
-        
-        const panels = xml.querySelectorAll('[material]');
-        
-        panels.forEach((panel, pIdx) => {
-            const pL = parseInt(panel.getAttribute('l'));
-            const pW = parseInt(panel.getAttribute('w'));
-            const mat = panel.getAttribute('material');
+    function renderApp(xml) {
+        const viewport = document.getElementById('viewport');
+        const partsList = document.getElementById('partsList');
+        viewport.innerHTML = '';
+        partsList.innerHTML = '';
 
+        // Находим все детали в файле .project
+        const parts = xml.querySelectorAll('part');
+        
+        parts.forEach(p => {
+            const id = p.getAttribute('id');
+            const name = p.getAttribute('name');
+            const l = p.getAttribute('dl');
+            const w = p.getAttribute('dw');
+            
+            // Логика постпроцессора: определяем кромку
+            const edges = {
+                t: p.getAttribute('elt') ? true : false,
+                b: p.getAttribute('elb') ? true : false,
+                l: p.getAttribute('ell') ? true : false,
+                r: p.getAttribute('elr') ? true : false
+            };
+
+            // Создаем карточку в списке
+            const row = document.createElement('div');
+            row.className = 'detail-row';
+            row.innerHTML = `<span class="detail-id">${id}</span> <span>${name}</span> <b>${l}x${w}</b>`;
+            
+            // Если деталь есть в раскрое (симуляция отрисовки для примера)
+            // В реальном .project координаты лежат в блоке <cut> или <layout>
+            createPartOnCanvas(id, l, w, viewport, name, edges);
+
+            row.onclick = () => printLabel({id, name, l, w, edges});
+            partsList.appendChild(row);
+        });
+    }
+
+    function createPartOnCanvas(id, l, w, container, name, edges) {
+        // Создаем визуальную "плиту" если её еще нет
+        if (!container.querySelector('.sheet')) {
             const sheet = document.createElement('div');
             sheet.className = 'sheet';
-            sheet.style.width = (pL * SCALE) + 'px';
-            sheet.style.height = (pW * SCALE) + 'px';
-            sheet.innerHTML = `<div style="position:absolute; top:-25px; font-weight:bold; color:var(--accent)">Лист ${pIdx+1} - ${mat}</div>`;
+            sheet.style.width = (2750 * SCALE) + 'px';
+            sheet.style.height = (1830 * SCALE) + 'px';
+            container.appendChild(sheet);
+        }
+        
+        const sheet = container.querySelector('.sheet');
+        const div = document.createElement('div');
+        div.className = 'part';
+        div.style.width = (l * SCALE) + 'px';
+        div.style.height = (w * SCALE) + 'px';
+        
+        // Случайное расположение для демонстрации (в реальном проекте берем из XML)
+        div.style.left = (Math.random() * 500) + 'px';
+        div.style.top = (Math.random() * 300) + 'px';
+        div.innerText = id;
 
-            const parts = panel.children;
-            for(let p of parts) {
-                const l = parseFloat(p.getAttribute('l'));
-                const w = parseFloat(p.getAttribute('w'));
-                const x = parseFloat(p.getAttribute('x'));
-                const y = parseFloat(p.getAttribute('y'));
-                const id = p.getAttribute('id');
-
-                if (l && w) {
-                    // Создаем кнопку в списке справа
-                    const item = document.createElement('div');
-                    item.className = 'detail-item';
-                    item.innerHTML = `<strong>Деталь №${id}</strong><br><small>${l} x ${w} мм</small>`;
-                    detailList.appendChild(item);
-
-                    // Создаем деталь на карте
-                    const div = document.createElement('div');
-                    div.className = 'part';
-                    div.style.left = (x * SCALE) + 'px';
-                    div.style.top = (y * SCALE) + 'px';
-                    div.style.width = (l * SCALE) + 'px';
-                    div.style.height = (w * SCALE) + 'px';
-                    div.innerText = id;
-
-                    const printInfo = { id, l, w, mat, name: "Деталь "+id };
-
-                    div.onclick = () => {
-                        document.querySelectorAll('.part').forEach(el => el.classList.remove('selected'));
-                        div.classList.add('selected');
-                        printLabel(printInfo);
-                    };
-                    
-                    item.onclick = () => div.click();
-
-                    sheet.appendChild(div);
-                }
-            }
-            canvas.appendChild(sheet);
-        });
+        div.onclick = () => {
+            div.classList.add('cut');
+            printLabel({id, name: name, l, w, edges});
+        };
+        sheet.appendChild(div);
     }
 
     function printLabel(data) {
         document.getElementById('l-name').innerText = data.name;
         document.getElementById('l-size').innerText = `${data.l} x ${data.w}`;
-        document.getElementById('l-mat').innerText = data.mat;
+        document.getElementById('l-mat').innerText = "Проект: Ванная / ЛДСП 16мм";
         document.getElementById('l-id').innerText = "№" + data.id;
 
-        // Эмуляция кромки (в реальном Базисе нужно тянуть атрибуты Side1, Side2)
-        const edgeBox = document.getElementById('l-edges');
-        edgeBox.className = "edge-box edge-t edge-l"; // Пример: верх и лево
+        // Отрисовка кромки
+        const vis = document.getElementById('l-edge-vis');
+        vis.innerHTML = '';
+        let etext = [];
+        if(data.edges.t) { vis.innerHTML += '<div class="e-active" style="top:0; width:100%; height:3px;"></div>'; etext.push("Верх"); }
+        if(data.edges.b) { vis.innerHTML += '<div class="e-active" style="bottom:0; width:100%; height:3px;"></div>'; etext.push("Низ"); }
+        if(data.edges.l) { vis.innerHTML += '<div class="e-active" style="left:0; height:100%; width:3px;"></div>'; etext.push("Лев"); }
+        if(data.edges.r) { vis.innerHTML += '<div class="e-active" style="right:0; height:100%; width:3px;"></div>'; etext.push("Прав"); }
+        document.getElementById('l-edge-text').innerText = etext.length > 0 ? etext.join(", ") : "Нет";
 
+        // QR Код
         const qrBox = document.getElementById('l-qr');
         qrBox.innerHTML = '';
-        new QRCode(qrBox, { text: `ID:${data.id}|${data.l}x${data.w}`, width: 90, height: 90 });
+        new QRCode(qrBox, { text: `PART:${data.id}|POS:02.01|SIZE:${data.l}x${data.w}`, width: 90, height: 90 });
 
-        setTimeout(() => { window.print(); }, 300);
+        setTimeout(() => { window.print(); }, 200);
     }
 </script>
 </body>
