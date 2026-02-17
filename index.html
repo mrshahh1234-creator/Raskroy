@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mustafayev Academy | Terminal</title>
+    <title>Mustafayev Academy | Cutting Terminal</title>
     <style>
         :root {
             --bg-color: #0f172a;
@@ -15,7 +15,7 @@
         }
 
         body {
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', Roboto, sans-serif;
             background: radial-gradient(circle at top right, #1e293b, #0f172a);
             color: var(--text-main);
             margin: 0;
@@ -25,10 +25,10 @@
             flex-direction: column;
         }
 
-        /* Шапка */
+        /* Header */
         header {
-            padding: 30px 50px;
-            background: rgba(15, 23, 42, 0.8);
+            padding: 25px 50px;
+            background: rgba(15, 23, 42, 0.9);
             backdrop-filter: blur(10px);
             border-bottom: 1px solid rgba(255,255,255,0.1);
             display: flex;
@@ -36,19 +36,21 @@
             align-items: center;
         }
 
-        h1 {
+        .logo-area h1 {
             margin: 0;
-            font-size: 24px;
-            letter-spacing: 1px;
+            font-size: 22px;
+            letter-spacing: 2px;
             text-transform: uppercase;
             background: linear-gradient(to right, #3b82f6, #10b981);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
 
-        /* Панель управления */
+        #status-clock { color: var(--text-dim); font-family: monospace; font-size: 18px; }
+
+        /* Controls */
         .controls {
-            padding: 20px 50px;
+            padding: 30px 50px;
             display: flex;
             align-items: center;
             gap: 20px;
@@ -57,107 +59,79 @@
         .btn-import {
             background: var(--accent-blue);
             color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
+            padding: 15px 30px;
+            border-radius: 10px;
             cursor: pointer;
-            font-weight: 600;
+            font-weight: 700;
             transition: all 0.2s ease;
-            border: 1px solid rgba(255,255,255,0.1);
             box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+            display: inline-block;
         }
 
-        .btn-import:hover {
-            background: #2563eb;
-            transform: translateY(-2px);
-        }
+        .btn-import:hover { background: #2563eb; transform: translateY(-2px); }
+        .btn-import:active { transform: translateY(0); }
 
         input[type="file"] { display: none; }
 
-        /* Контейнер с деталями */
+        /* Grid Area */
         .main-content {
             flex: 1;
-            padding: 0 50px 100px 50px;
+            padding: 0 50px 120px 50px;
         }
 
         .grid-container {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 20px;
         }
 
-        /* Карточка детали */
+        /* Item Card */
         .detail-card {
             background: var(--card-bg);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 16px;
-            padding: 25px;
-            text-align: left;
+            border-radius: 20px;
+            padding: 30px;
             cursor: pointer;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .detail-card::before {
-            content: '';
-            position: absolute;
-            left: 0; top: 0; width: 4px; height: 100%;
-            background: var(--accent-green);
-            opacity: 0;
-            transition: 0.2s;
+            border-left: 5px solid var(--accent-blue);
         }
 
         .detail-card:hover {
-            background: rgba(51, 65, 85, 0.8);
-            border-color: var(--accent-green);
-            transform: translateY(-5px);
+            background: rgba(51, 65, 85, 0.9);
+            border-left-color: var(--accent-green);
+            transform: scale(1.03);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
         }
 
-        .detail-card:hover::before { opacity: 1; }
-
-        .detail-card h2 {
-            margin: 0;
-            font-size: 18px;
-            color: var(--text-dim);
-            text-transform: uppercase;
+        .detail-card h2 { margin: 0; font-size: 16px; color: var(--text-dim); text-transform: uppercase; }
+        .detail-card .size { font-size: 38px; font-weight: 900; margin: 15px 0; color: #fff; }
+        .detail-card .order-tag {
+            font-size: 13px; color: #fff; background: var(--accent-blue);
+            padding: 5px 12px; border-radius: 20px; display: inline-block;
         }
 
-        .detail-card .size {
-            font-size: 32px;
-            font-weight: 800;
-            margin: 10px 0;
-            color: var(--text-main);
-        }
-
-        .detail-card .order-info {
-            font-size: 14px;
-            color: var(--accent-blue);
-            background: rgba(59, 130, 246, 0.1);
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 4px;
-        }
-
-        /* Подвал */
+        /* Footer */
         footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
             padding: 20px 50px;
-            text-align: right;
-            font-size: 18px;
-            font-weight: 300;
+            box-sizing: border-box;
+            background: rgba(15, 23, 42, 0.95);
+            display: flex;
+            justify-content: flex-end;
+            font-size: 20px;
             color: var(--text-dim);
-            background: rgba(15, 23, 42, 0.9);
             border-top: 1px solid rgba(255,255,255,0.05);
         }
 
-        footer b { color: var(--accent-green); letter-spacing: 1px; }
+        footer b { color: var(--accent-green); margin-left: 5px; }
 
-        /* Печать */
+        /* Print Settings */
         @media print {
             .no-print { display: none !important; }
-            body { background: white; color: black; }
-            #print-area { display: block !important; padding: 20px; text-align: center; }
-            .detail-card, header, footer, .controls { display: none; }
+            #print-area { display: block !important; color: black; background: white; width: 100%; }
         }
 
         #print-area { display: none; }
@@ -166,14 +140,16 @@
 <body>
 
     <header class="no-print">
-        <h1>Mustafayev Factory | Система Нарезки</h1>
-        <div id="status-clock" style="color: var(--text-dim)"></div>
+        <div class="logo-area">
+            <h1>Mustafayev Factory | Terminal</h1>
+        </div>
+        <div id="status-clock">00:00:00</div>
     </header>
 
     <div class="controls no-print">
-        <label for="file-upload" class="btn-import">📥 Загрузить заказ</label>
-        <input type="file" id="file-upload" accept=".json,.csv" onchange="importData(event)">
-        <span id="file-name" style="color: var(--text-dim); font-size: 14px;">Файл не выбран</span>
+        <label for="file-upload" class="btn-import">📦 ИМПОРТ ФАЙЛА .BIR</label>
+        <input type="file" id="file-upload" accept=".bir" onchange="processBirFile(event)">
+        <span id="file-info" style="color: var(--text-dim)">Выберите файл для загрузки списка деталей</span>
     </div>
 
     <main class="main-content no-print">
@@ -186,39 +162,52 @@
     </footer>
 
     <div id="print-area">
-        <div style="border: 2px solid #000; padding: 10px;">
-            <h2 id="p-name"></h2>
-            <h1 id="p-size" style="font-size: 48pt; margin: 10px 0;"></h1>
-            <p id="p-order" style="font-size: 18pt;"></p>
-            <hr>
-            <p>Mustafayev Academy Production</p>
+        <div style="text-align: center; font-family: Arial; padding: 20px; border: 2px solid black;">
+            <div style="font-size: 14pt; border-bottom: 1px solid black; margin-bottom: 10px; padding-bottom: 5px;">Mustafayev Academy</div>
+            <div id="p-name" style="font-size: 20pt; font-weight: bold;"></div>
+            <div id="p-size" style="font-size: 45pt; font-weight: 900; margin: 15px 0;"></div>
+            <div id="p-order" style="font-size: 16pt;"></div>
+            <div style="margin-top: 20px; font-size: 10pt;" id="p-date"></div>
         </div>
     </div>
 
     <script>
-        // Часы в шапке
+        // Часы
         setInterval(() => {
-            document.getElementById('status-clock').innerText = new Date().toLocaleString();
+            document.getElementById('status-clock').innerText = new Date().toLocaleTimeString();
         }, 1000);
 
-        function importData(event) {
+        // Обработка файла .BIR
+        function processBirFile(event) {
             const file = event.target.files[0];
             if (!file) return;
-            document.getElementById('file-name').innerText = "Загружено: " + file.name;
+
+            document.getElementById('file-info').innerText = "Файл: " + file.name;
 
             const reader = new FileReader();
             reader.onload = function(e) {
-                try {
-                    let data = JSON.parse(e.target.result);
-                    renderButtons(data);
-                } catch (err) {
-                    alert("Ошибка: Используйте формат JSON");
-                }
+                const text = e.target.result;
+                const lines = text.split(/\r?\n/);
+                const data = [];
+
+                lines.forEach(line => {
+                    if (line.trim() !== "") {
+                        // Пытаемся разделить по популярным разделителям в .bir (запятая, точка с запятой или табуляция)
+                        const parts = line.split(/[;,]/); 
+                        data.push({
+                            name: parts[0] ? parts[0].trim() : "Деталь",
+                            size: parts[1] ? parts[1].trim() : "0",
+                            order: parts[2] ? parts[2].trim() : "Заказ"
+                        });
+                    }
+                });
+                renderCards(data);
             };
             reader.readAsText(file);
         }
 
-        function renderButtons(items) {
+        // Вывод карточек на экран
+        function renderCards(items) {
             const container = document.getElementById('items-list');
             container.innerHTML = '';
 
@@ -226,19 +215,24 @@
                 const card = document.createElement('div');
                 card.className = 'detail-card';
                 card.innerHTML = `
-                    <h2>${item.name}</h2>
+                    <h2>Наименование</h2>
                     <div class="size">${item.size} мм</div>
-                    <div class="order-info">Заказ: ${item.order}</div>
+                    <div class="order-tag">${item.name} | ${item.order}</div>
                 `;
-                card.onclick = () => sendToPrint(item);
+                card.onclick = () => {
+                    printLabel(item);
+                };
                 container.appendChild(card);
             });
         }
 
-        function sendToPrint(item) {
+        // Функция печати
+        function printLabel(item) {
             document.getElementById('p-name').innerText = item.name;
             document.getElementById('p-size').innerText = item.size + " mm";
             document.getElementById('p-order').innerText = "Заказ: " + item.order;
+            document.getElementById('p-date').innerText = "Дата: " + new Date().toLocaleString();
+            
             window.print();
         }
     </script>
