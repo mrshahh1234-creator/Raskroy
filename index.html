@@ -2,51 +2,41 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>GibLab Web PRO | Nanxing ND510S Edition</title>
+    <title>GibLab Web PRO | Nanxing ND510S</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     
     <style>
         :root { --nx-blue: #0054a6; --nx-red: #e30613; --bg: #f0f2f5; }
-        body { margin: 0; font-family: 'Segoe UI', Arial; display: flex; height: 100vh; background: var(--bg); }
+        body { margin: 0; font-family: 'Segoe UI', Arial; display: flex; height: 100vh; background: var(--bg); font-size: 13px; }
         
-        /* Панель управления */
-        .sidebar { width: 220px; background: #2c3e50; color: white; padding: 15px; display: flex; flex-direction: column; box-shadow: 2px 0 10px rgba(0,0,0,0.3); }
-        .logo-area { text-align: center; margin-bottom: 25px; padding: 10px; background: white; border-radius: 5px; }
-        .logo-text { color: var(--nx-blue); font-weight: bold; font-size: 20px; }
-        .logo-sub { color: var(--nx-red); font-size: 10px; letter-spacing: 2px; }
+        .sidebar { width: 230px; background: #2c3e50; color: white; padding: 15px; display: flex; flex-direction: column; }
+        .logo-area { text-align: center; margin-bottom: 20px; padding: 10px; background: white; border-radius: 5px; }
+        .logo-text { color: var(--nx-blue); font-weight: bold; font-size: 22px; }
         
-        .btn { background: var(--nx-blue); border: none; color: white; padding: 12px; margin: 5px 0; cursor: pointer; border-radius: 4px; font-weight: bold; transition: 0.2s; }
-        .btn:hover { background: #003d7a; transform: translateX(5px); }
-        .btn-green { background: #27ae60; }
-
-        /* Контент */
+        /* Кнопки управления */
+        .btn { background: var(--nx-blue); border: none; color: white; padding: 12px; margin: 4px 0; cursor: pointer; border-radius: 4px; font-weight: bold; text-align: left; }
+        .btn:hover { opacity: 0.9; transform: translateX(3px); transition: 0.2s; }
+        .btn-import { background: #8e44ad; } /* Фиолетовый для импорта */
+        .btn-save { background: #27ae60; }   /* Зеленый для сохранения */
+        
         .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .tabs { background: #ddd; display: flex; padding: 5px 5px 0; border-bottom: 1px solid #bbb; }
-        .tab { padding: 10px 25px; cursor: pointer; background: #ccc; margin-right: 5px; border-radius: 5px 5px 0 0; }
+        .tabs { background: #ddd; display: flex; padding: 5px 5px 0; }
+        .tab { padding: 10px 20px; cursor: pointer; background: #ccc; margin-right: 5px; border-radius: 5px 5px 0 0; }
         .tab.active { background: white; font-weight: bold; border-bottom: 2px solid var(--nx-blue); }
 
         .content-section { flex: 1; overflow-y: auto; background: white; padding: 15px; display: none; }
         .content-section.active { display: block; }
 
-        table { width: 100%; border-collapse: collapse; }
-        th { background: #f8f9fa; border: 1px solid #ddd; padding: 10px; position: sticky; top: 0; }
-        td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background: #f1f1f1; border: 1px solid #ccc; padding: 8px; sticky: top; }
+        td { border: 1px solid #ccc; padding: 6px; text-align: center; }
+        input[type="number"], input[type="text"] { width: 90%; padding: 4px; border: 1px solid #ddd; }
 
-        /* Этикетка Nanxing ND510S */
-        .label-grid { display: grid; grid-template-columns: repeat(auto-fill, 80mm); gap: 10px; padding: 10px; }
-        .label-card { 
-            width: 80mm; height: 50mm; border: 1px solid #000; padding: 8px; 
-            background: #fff; position: relative; overflow: hidden; box-sizing: border-box; 
-        }
-        .label-nx-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #000; padding-bottom: 3px; }
-        .label-body { margin-top: 5px; }
-        .label-title { font-size: 14px; font-weight: bold; color: #000; }
-        .label-dims { font-size: 22px; font-weight: 800; margin: 5px 0; }
-        .label-footer { font-size: 10px; position: absolute; bottom: 5px; left: 8px; }
-        .qr-box { position: absolute; bottom: 5px; right: 5px; width: 65px; height: 65px; }
-
-        canvas { background: #fff; border: 1px solid #333; }
+        /* Дизайн этикетки */
+        .label-grid { display: grid; grid-template-columns: repeat(auto-fill, 80mm); gap: 15px; }
+        .label-card { width: 80mm; height: 50mm; border: 2px solid #000; padding: 10px; position: relative; box-sizing: border-box; }
+        .label-qr { position: absolute; bottom: 5px; right: 5px; }
     </style>
 </head>
 <body>
@@ -54,42 +44,42 @@
 <div class="sidebar">
     <div class="logo-area">
         <div class="logo-text">NANXING</div>
-        <div class="logo-sub">EQUIPMENT</div>
+        <div style="color:#666; font-size:10px">SYSTEM CONTROL</div>
     </div>
-    <div style="font-size: 11px; text-align: center; margin-bottom: 20px;">Model: ND510S (6-Side Boring)</div>
+
+    <button class="btn btn-import" onclick="document.getElementById('fileInput').click()">📥 ИМПОРТ .PROJECT</button>
+    <input type="file" id="fileInput" style="display:none" accept=".project,.json" onchange="importProject(event)">
+    
+    <button class="btn btn-save" onclick="exportProject()">💾 СОХРАНИТЬ .PROJECT</button>
+    <hr style="width:100%; border: 0; border-top: 1px solid #555; margin: 10px 0;">
     
     <button class="btn" onclick="addPart()">+ Добавить деталь</button>
-    <button class="btn btn-green" onclick="runNesting()">РАССЧИТАТЬ КАРТУ</button>
-    <button class="btn" onclick="exportSawXML()" style="background: #e67e22;">ЭКСПОРТ (SAW)</button>
-    <button class="btn" onclick="switchTab('labels')">ПЕЧАТЬ ЭТИКЕТОК</button>
+    <button class="btn" onclick="runNesting()" style="background:#e67e22">⚡ РАССЧИТАТЬ</button>
+    <button class="btn" onclick="switchTab('labels')">🏷️ ЭТИКЕТКИ</button>
 </div>
 
 <div class="main">
     <div class="tabs">
-        <div id="t-parts" class="tab active" onclick="switchTab('parts')">Список деталей</div>
-        <div id="t-map" class="tab" onclick="switchTab('map')">Карта раскроя</div>
+        <div id="t-parts" class="tab active" onclick="switchTab('parts')">Детали заказа</div>
         <div id="t-labels" class="tab" onclick="switchTab('labels')">Этикетки (ND510S)</div>
     </div>
 
     <div id="sec-parts" class="content-section active">
+        <h3 id="projectNameDisplay">Проект: Новый заказ</h3>
         <table>
             <thead>
                 <tr>
                     <th>№</th>
                     <th>Наименование</th>
-                    <th>Длина (L)</th>
-                    <th>Ширина (W)</th>
+                    <th>L (мм)</th>
+                    <th>W (мм)</th>
                     <th>Кол-во</th>
-                    <th>Кромка</th>
-                    <th>Присадка (Файл)</th>
+                    <th>Программа (.ban)</th>
+                    <th>Удалить</th>
                 </tr>
             </thead>
             <tbody id="partsTableBody"></tbody>
         </table>
-    </div>
-
-    <div id="sec-map" class="content-section" style="text-align: center; background: #555;">
-        <canvas id="nestCanvas"></canvas>
     </div>
 
     <div id="sec-labels" class="content-section">
@@ -98,26 +88,68 @@
 </div>
 
 <script>
-    let parts = [
-        { id: "P001", name: "Бок Шкафа Левый", l: 2100, w: 580, count: 2, edge: "2.0x19", prg: "BOK_L.ban" },
-        { id: "P002", name: "Горизонт Низ", l: 800, w: 580, count: 1, edge: "0.4x19", prg: "GOR_N.ban" },
-        { id: "P003", name: "Полка Внутр", l: 768, w: 550, count: 4, edge: "1.0x19", prg: "POLKA.ban" }
-    ];
+    let projectData = {
+        name: "Amir_Project_01",
+        parts: [
+            { id: 1, name: "Бок левый", l: 700, w: 500, count: 2, prg: "side_l.ban" },
+            { id: 2, name: "Крышка", l: 1000, w: 500, count: 1, prg: "top.ban" }
+        ]
+    };
+
+    // ФУНКЦИЯ ИМПОРТА .PROJECT
+    function importProject(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (imported.parts) {
+                    projectData = imported;
+                    document.getElementById('projectNameDisplay').innerText = "Проект: " + (projectData.name || "Загружен");
+                    renderTable();
+                    alert("Проект успешно загружен!");
+                }
+            } catch (err) {
+                alert("Ошибка: Неверный формат файла .project");
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    // ФУНКЦИЯ ЭКСПОРТА .PROJECT
+    function exportProject() {
+        const dataStr = JSON.stringify(projectData, null, 2);
+        const blob = new Blob([dataStr], {type: "application/json"});
+        saveAs(blob, (projectData.name || "export") + ".project");
+    }
 
     function renderTable() {
         const body = document.getElementById('partsTableBody');
         body.innerHTML = '';
-        parts.forEach((p, i) => {
-            body.innerHTML += `<tr>
-                <td>${p.id}</td>
-                <td><input type="text" value="${p.name}" onchange="parts[${i}].name=this.value"></td>
-                <td><input type="number" value="${p.l}" onchange="parts[${i}].l=this.value"></td>
-                <td><input type="number" value="${p.w}" onchange="parts[${i}].w=this.value"></td>
-                <td><input type="number" value="${p.count}" onchange="parts[${i}].count=this.value"></td>
-                <td>${p.edge}</td>
-                <td><input type="text" value="${p.prg}" onchange="parts[${i}].prg=this.value"></td>
-            </tr>`;
+        projectData.parts.forEach((p, i) => {
+            body.innerHTML += `
+                <tr>
+                    <td>${i+1}</td>
+                    <td><input type="text" value="${p.name}" onchange="projectData.parts[${i}].name=this.value"></td>
+                    <td><input type="number" value="${p.l}" onchange="projectData.parts[${i}].l=Number(this.value)"></td>
+                    <td><input type="number" value="${p.w}" onchange="projectData.parts[${i}].w=Number(this.value)"></td>
+                    <td><input type="number" value="${p.count}" onchange="projectData.parts[${i}].count=Number(this.value)"></td>
+                    <td><input type="text" value="${p.prg}" onchange="projectData.parts[${i}].prg=this.value"></td>
+                    <td><button onclick="deletePart(${i})">❌</button></td>
+                </tr>`;
         });
+    }
+
+    function addPart() {
+        projectData.parts.push({ id: Date.now(), name: "Деталь", l: 600, w: 400, count: 1, prg: "new.ban" });
+        renderTable();
+    }
+
+    function deletePart(index) {
+        projectData.parts.splice(index, 1);
+        renderTable();
     }
 
     function switchTab(target) {
@@ -128,68 +160,27 @@
         if(target === 'labels') generateLabels();
     }
 
-    function runNesting() {
-        const canvas = document.getElementById('nestCanvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = 900; canvas.height = 600;
-        ctx.fillStyle = "white"; ctx.fillRect(0,0,900,600);
-        
-        // Визуализация раскроя
-        let curX = 10;
-        parts.forEach((p, i) => {
-            ctx.fillStyle = "#ffa500";
-            ctx.fillRect(curX, 10, p.l*0.1, p.w*0.1);
-            ctx.strokeRect(curX, 10, p.l*0.1, p.w*0.1);
-            curX += (p.l*0.1) + 5;
-        });
-        switchTab('map');
-    }
-
     function generateLabels() {
         const container = document.getElementById('labelsContainer');
         container.innerHTML = '';
-        
-        parts.forEach((p, idx) => {
+        projectData.parts.forEach((p, idx) => {
             for(let i=0; i < p.count; i++) {
                 const labelId = `qr-${idx}-${i}`;
                 const card = document.createElement('div');
                 card.className = 'label-card';
                 card.innerHTML = `
-                    <div class="label-nx-header">
-                        <span style="color:#0054a6; font-weight:bold;">NANXING ND510S</span>
-                        <span style="font-size:9px;">Part: ${idx+1}/${p.count}</span>
+                    <div style="border-bottom: 2px solid #000; font-weight: bold; display:flex; justify-content:space-between">
+                        <span>NANXING ND510S</span> <span>${i+1}/${p.count}</span>
                     </div>
-                    <div class="label-body">
-                        <div class="label-title">${p.name}</div>
-                        <div class="label-dims">${p.l} x ${p.w}</div>
-                        <div style="font-size:10px;">Кромка: ${p.edge}</div>
-                    </div>
-                    <div class="label-footer">
-                        Заказ: #786-AMIR<br>Программа: <b>${p.prg}</b>
-                    </div>
-                    <div class="qr-box" id="${labelId}"></div>
+                    <div style="font-size: 16px; margin: 5px 0;">${p.name}</div>
+                    <div style="font-size: 24px; font-weight: 900;">${p.l} x ${p.w}</div>
+                    <div style="font-size: 11px; margin-top:10px;">Программа: <b>${p.prg}</b></div>
+                    <div id="${labelId}" class="label-qr"></div>
                 `;
                 container.appendChild(card);
-                
-                new QRCode(document.getElementById(labelId), {
-                    text: `ND510S|PROGRAMS|${p.prg}`,
-                    width: 60, height: 60,
-                    colorDark : "#000000",
-                    colorLight : "#ffffff",
-                    correctLevel : QRCode.CorrectLevel.H
-                });
+                new QRCode(document.getElementById(labelId), { text: p.prg, width: 60, height: 60 });
             }
         });
-    }
-
-    function exportSawXML() {
-        let xml = `<?xml version="1.0" encoding="UTF-8"?><NanxingProject>`;
-        parts.forEach(p => {
-            xml += `<Detail Name="${p.name}" L="${p.l}" W="${p.w}" Qty="${p.count}" CNC="${p.prg}"/>`;
-        });
-        xml += `</NanxingProject>`;
-        const blob = new Blob([xml], {type: "text/xml"});
-        saveAs(blob, "nanxing_project.xml");
     }
 
     renderTable();
