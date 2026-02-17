@@ -2,189 +2,129 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>GibLab Web PRO | Nanxing ND510S</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-    
+    <title>Оператор: Раскрой GibLab</title>
     <style>
-        :root { --nx-blue: #0054a6; --nx-red: #e30613; --bg: #f4f7f9; }
-        body { margin: 0; font-family: 'Segoe UI', Tahoma; display: flex; height: 100vh; background: var(--bg); }
+        body { font-family: sans-serif; background: #1a1a1a; color: white; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        .header { background: #333; padding: 10px 20px; display: flex; align-items: center; gap: 20px; border-bottom: 2px solid #ed1c24; }
+        .btn-load { background: #ed1c24; color: white; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 4px; }
+        .canvas-area { flex: 1; position: relative; overflow: auto; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        canvas { background: white; box-shadow: 0 0 20px rgba(0,0,0,0.5); border: 1px solid #999; }
         
-        .sidebar { width: 250px; background: #2c3e50; color: white; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-        .logo-box { background: white; padding: 10px; border-radius: 4px; text-align: center; margin-bottom: 10px; }
-        .logo-text { color: var(--nx-blue); font-weight: 900; font-size: 24px; line-height: 1; }
-        
-        .btn { background: var(--nx-blue); border: none; color: white; padding: 12px; cursor: pointer; border-radius: 4px; font-weight: bold; text-align: left; transition: 0.2s; }
-        .btn:hover { background: #004488; transform: translateX(5px); }
-        .btn-import { background: #8e44ad; border: 2px solid #ab62cf; }
-        .btn-calc { background: #27ae60; font-size: 14px; text-align: center; margin-top: 10px; }
-
-        .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-        .tabs { background: #dee2e6; display: flex; padding: 8px 10px 0; border-bottom: 1px solid #ced4da; }
-        .tab { padding: 10px 20px; cursor: pointer; background: #ced4da; margin-right: 5px; border-radius: 6px 6px 0 0; border: 1px solid #adb5bd; border-bottom: none; }
-        .tab.active { background: white; font-weight: bold; color: var(--nx-blue); }
-
-        .content { flex: 1; overflow-y: auto; background: white; padding: 20px; }
-        table { width: 100%; border-collapse: collapse; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        th { background: #f8f9fa; border: 1px solid #dee2e6; padding: 12px; font-size: 13px; text-align: center; sticky: top; }
-        td { border: 1px solid #dee2e6; padding: 8px; text-align: center; font-size: 13px; }
-
-        /* Этикетка */
-        .label-card { width: 80mm; height: 50mm; border: 2px solid #000; padding: 10px; margin: 10px; display: inline-block; position: relative; vertical-align: top; background: white; }
-        .label-qr { position: absolute; bottom: 5px; right: 5px; }
+        /* Чек для печати */
+        #print-zone { display: none; }
+        @media print {
+            body * { display: none; }
+            #print-zone { display: block !important; width: 58mm; color: black; text-align: center; }
+            .b-name { font-size: 16pt; font-weight: bold; }
+            .b-info { font-size: 12pt; margin: 5px 0; }
+        }
     </style>
 </head>
 <body>
 
-<div class="sidebar">
-    <div class="logo-box">
-        <div class="logo-text">NANXING</div>
-        <div style="color:var(--nx-red); font-size:9px; font-weight:bold;">ND510S CONTROL</div>
-    </div>
-
-    <button class="btn btn-import" onclick="document.getElementById('fileInput').click()">📥 ЗАГРУЗИТЬ .PROJECT</button>
-    <input type="file" id="fileInput" style="display:none" accept=".project" onchange="handleFile(event)">
-    
-    <button class="btn" onclick="downloadProject()">💾 СОХРАНИТЬ ПРОЕКТ</button>
-    <button class="btn btn-calc" onclick="switchTab('labels')">⚙️ ГЕНЕРИРОВАТЬ ЭТИКЕТКИ</button>
-    <button class="btn" onclick="exportSawXML()" style="background:#e67e22">🛒 ВЫГРУЗИТЬ НА СТАНОК</button>
+<div class="header">
+    <div style="font-size: 20px; font-weight: bold;">GibLab Monitor</div>
+    <input type="file" id="loader" style="display:none" accept=".json,.js">
+    <button class="btn-load" onclick="document.getElementById('loader').click()">ЗАГРУЗИТЬ ФАЙЛ ЭКСПОРТА</button>
+    <div id="file-info">Файл не выбран</div>
 </div>
 
-<div class="main">
-    <div class="tabs">
-        <div id="t-parts" class="tab active" onclick="switchTab('parts')">Список деталей из файла</div>
-        <div id="t-labels" class="tab" onclick="switchTab('labels')">Этикетки для присадки</div>
-    </div>
+<div class="canvas-area">
+    <canvas id="view"></canvas>
+</div>
 
-    <div id="sec-parts" class="content">
-        <h2 id="projName">Проект не загружен</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Наименование</th>
-                    <th>Длина (L)</th>
-                    <th>Ширина (W)</th>
-                    <th>Кол-во</th>
-                    <th>Код операции</th>
-                </tr>
-            </thead>
-            <tbody id="tableBody">
-                <tr><td colspan="6">Загрузите файл .project для начала работы</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <div id="sec-labels" class="content" style="display:none">
-        <div id="labelsGrid"></div>
-    </div>
+<div id="print-zone">
+    <div class="b-name" id="label-name">Деталь</div>
+    <div class="b-info" id="label-size">000 x 000</div>
+    <div class="b-info" id="label-mat">Материал</div>
+    <div style="font-family: 'Code39'; font-size: 30px;">|||||||||||||</div>
 </div>
 
 <script>
-    let currentParts = [];
-    let projectName = "";
+    const canvas = document.getElementById('view');
+    const ctx = canvas.getContext('2d');
+    let parts = [];
+    let scale = 0.35; // Коэффициент масштаба
 
-    // Функция чтения твоего файла .project
-    function handleFile(event) {
-        const file = event.target.files[0];
+    // Чтение файла
+    document.getElementById('loader').addEventListener('change', function(e) {
+        const file = e.target.files[0];
         if (!file) return;
+        document.getElementById('file-info').innerText = file.name;
 
         const reader = new FileReader();
-        reader.onload = function(e) {
-            const parser = new DOMParser();
-            const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
-            
-            // Находим название проекта (Гардероб)
-            const goodTag = xmlDoc.getElementsByTagName("good")[0];
-            projectName = goodTag ? goodTag.getAttribute("name") : "Проект";
-            document.getElementById('projName').innerText = "Проект: " + projectName;
-
-            // Парсим детали
-            const partTags = xmlDoc.getElementsByTagName("part");
-            currentParts = [];
-
-            for (let i = 0; i < partTags.length; i++) {
-                currentParts.push({
-                    id: partTags[i].getAttribute("id"),
-                    name: partTags[i].getAttribute("name"),
-                    l: partTags[i].getAttribute("dl"),
-                    w: partTags[i].getAttribute("dw"),
-                    count: partTags[i].getAttribute("count") || 1,
-                    code: partTags[i].getAttribute("code") || "Standard"
-                });
+        reader.onload = function(event) {
+            try {
+                // Если скрипт Базиса выдает чистый JSON
+                const data = JSON.parse(event.target.result);
+                processData(data);
+            } catch (err) {
+                alert("Ошибка чтения: убедитесь, что это JSON файл");
             }
-            renderTable();
-            alert("Файл " + file.name + " успешно прочитан. Найдено деталей: " + currentParts.length);
         };
         reader.readAsText(file);
+    });
+
+    function processData(data) {
+        // Логика под ваш скрипт: ищем массив деталей
+        // Если ваш скрипт упаковывает их в opCutSheets -> parts
+        if (data.opCutSheets && data.opCutSheets[0].parts) {
+            parts = data.opCutSheets[0].parts;
+        } else if (Array.isArray(data)) {
+            parts = data;
+        }
+
+        renderMap();
     }
 
-    function renderTable() {
-        const tbody = document.getElementById('tableBody');
-        tbody.innerHTML = '';
-        currentParts.forEach(p => {
-            tbody.innerHTML += `<tr>
-                <td>${p.id}</td>
-                <td>${p.name}</td>
-                <td><b>${p.l}</b></td>
-                <td><b>${p.w}</b></td>
-                <td>${p.count}</td>
-                <td>${p.code}</td>
-            </tr>`;
-        });
-    }
+    function renderMap() {
+        // Установка размера плиты из конфига (например 2750x1830)
+        canvas.width = 2750 * scale;
+        canvas.height = 1830 * scale;
 
-    function switchTab(tab) {
-        document.getElementById('sec-parts').style.display = tab === 'parts' ? 'block' : 'none';
-        document.getElementById('sec-labels').style.display = tab === 'labels' ? 'block' : 'none';
-        document.getElementById('t-parts').className = tab === 'parts' ? 'tab active' : 'tab';
-        document.getElementById('t-labels').className = tab === 'labels' ? 'tab active' : 'tab';
-        if (tab === 'labels') renderLabels();
-    }
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    function renderLabels() {
-        const grid = document.getElementById('labelsGrid');
-        grid.innerHTML = '';
-        currentParts.forEach((p, idx) => {
-            for (let i = 0; i < p.count; i++) {
-                const labelId = `qr-${idx}-${i}`;
-                const div = document.createElement('div');
-                div.className = 'label-card';
-                div.innerHTML = `
-                    <div style="font-weight:bold; border-bottom:1px solid #000; font-size:10px; display:flex; justify-content:space-between">
-                        <span>NANXING ND510S</span> <span>${i+1}/${p.count}</span>
-                    </div>
-                    <div style="margin-top:5px; font-size:12px;">${p.name}</div>
-                    <div style="font-size:20px; font-weight:900; margin:5px 0;">${p.l} x ${p.w}</div>
-                    <div style="font-size:9px; color:#555;">ID: ${p.id} | Code: ${p.code}</div>
-                    <div id="${labelId}" class="label-qr"></div>
-                `;
-                grid.appendChild(div);
-                // В QR-коде зашиваем ID и размеры для сканера ND510S
-                new QRCode(document.getElementById(labelId), {
-                    text: `ID${p.id}_${p.l}x${p.w}`,
-                    width: 64, height: 64
-                });
+        parts.forEach(p => {
+            // Рисуем деталь. ВАЖНО:PosX и PosY должны быть в вашем файле
+            const x = (p.PosX || 0) * scale;
+            const y = (p.PosY || 0) * scale;
+            const w = (p.W || p.Width || 0) * scale;
+            const h = (p.H || p.Height || 0) * scale;
+
+            ctx.fillStyle = p.printed ? "#2ecc71" : "#3498db";
+            ctx.fillRect(x, y, w, h);
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(x, y, w, h);
+
+            if (w > 30) {
+                ctx.fillStyle = "white";
+                ctx.font = "10px Arial";
+                ctx.fillText(p.Name || "Деталь", x + 5, y + 15);
             }
         });
     }
 
-    // Скачивание проекта обратно в .project (JSON-версия)
-    function downloadProject() {
-        const data = JSON.stringify({projectName, parts: currentParts}, null, 2);
-        const blob = new Blob([data], {type: "application/octet-stream"});
-        saveAs(blob, projectName + ".project");
-    }
+    // Клик по холсту
+    canvas.addEventListener('click', function(e) {
+        const rect = canvas.getBoundingClientRect();
+        const mx = (e.clientX - rect.left) / scale;
+        const my = (e.clientY - rect.top) / scale;
 
-    // Выгрузка XML для пильного центра Nanxing
-    function exportSawXML() {
-        let xml = `<?xml version="1.0" encoding="UTF-8"?><Job Name="${projectName}">`;
-        currentParts.forEach(p => {
-            xml += `<Part Name="${p.name}" Length="${p.l}" Width="${p.w}" Quantity="${p.count}" />`;
+        parts.forEach(p => {
+            if (mx >= p.PosX && mx <= (p.PosX + p.W) && my >= p.PosY && my <= (p.PosY + p.H)) {
+                p.printed = true;
+                printItem(p);
+                renderMap();
+            }
         });
-        xml += `</Job>`;
-        const blob = new Blob([xml], {type: "text/xml"});
-        saveAs(blob, "To_Nanxing_Saw.xml");
+    });
+
+    function printItem(p) {
+        document.getElementById('label-name').innerText = p.Name || "Деталь";
+        document.getElementById('label-size').innerText = `${Math.round(p.W)} x ${Math.round(p.H)}`;
+        document.getElementById('label-mat').innerText = p.Material || "";
+        window.print();
     }
 </script>
 </body>
