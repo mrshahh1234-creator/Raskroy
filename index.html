@@ -2,93 +2,90 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Печать готовых BMP этикеток</title>
+    <title>Печать этикеток AutoCUT</title>
     <style>
-        body { font-family: sans-serif; background: #2c3e50; color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; }
-        .controls { background: #34495e; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); width: 100%; max-width: 600px; text-align: center; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; width: 100%; max-width: 1000px; margin-top: 20px; }
-        .part-card { background: #ecf0f1; color: #2c3e50; padding: 10px; border-radius: 5px; cursor: pointer; text-align: center; transition: 0.2s; }
-        .part-card:hover { background: #3498db; color: white; transform: scale(1.05); }
-        .part-card b { font-size: 18px; display: block; }
+        body { font-family: sans-serif; background: #2c3e50; color: white; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .setup-box { background: #34495e; padding: 20px; border-radius: 10px; margin-bottom: 20px; width: 100%; max-width: 600px; text-align: center; border: 2px dashed #7f8c8d; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; width: 100%; max-width: 1000px; }
+        .part-card { background: #ecf0f1; color: #2c3e50; padding: 10px; border-radius: 5px; cursor: pointer; text-align: center; }
+        .part-card:hover { background: #3498db; color: white; }
+        .status { font-size: 12px; margin-top: 5px; color: #bdc3c7; }
         
-        #print-preview { display: none; }
-
+        #print-area { display: none; }
         @media print {
             body * { visibility: hidden; }
-            #print-preview, #print-preview img { visibility: visible; position: absolute; left: 0; top: 0; width: 100%; }
+            #print-area, #print-area img { visibility: visible; position: absolute; left: 0; top: 0; width: 100%; }
             @page { margin: 0; }
         }
     </style>
 </head>
 <body>
 
-<div class="controls">
-    <h2>Печать этикеток (BMP)</h2>
-    <p>1. Выберите файл .CUT из GitLab/папки</p>
-    <input type="file" id="fileInput" accept=".cut">
-    <div id="projectTitle" style="margin-top:15px; font-weight:bold; color:#f1c40f;"></div>
+<div class="setup-box">
+    <h3>Шаг 1: Загрузите все картинки (.bmp) из папки</h3>
+    <input type="file" id="bmpInput" multiple accept=".bmp">
+    <div id="bmpStatus" class="status">Картинки не загружены</div>
+</div>
+
+<div class="setup-box" id="step2" style="opacity: 0.5; pointer-events: none;">
+    <h3>Шаг 2: Выберите файл проекта (.cut)</h3>
+    <input type="file" id="cutInput" accept=".cut">
 </div>
 
 <div class="grid" id="partsGrid"></div>
 
-<div id="print-preview">
-    <img id="labelImage" src="" alt="label">
-</div>
+<div id="print-area"><img id="toPrint" src=""></div>
 
 <script>
-    // Если картинки лежат в другой папке, укажите путь здесь, например: "labels/"
-    const imagePath = ""; 
+    let imageCache = {}; // Здесь будем хранить ссылки на картинки
 
-    document.getElementById('fileInput').addEventListener('change', function(e) {
+    // 1. Загрузка картинок в память браузера
+    document.getElementById('bmpInput').addEventListener('change', function(e) {
+        const files = e.target.files;
+        for (let file of files) {
+            const nameWithoutExt = file.name.replace(/\.[^/.]+$/, ""); // Удаляем .bmp
+            imageCache[nameWithoutExt] = URL.createObjectURL(file);
+        }
+        document.getElementById('bmpStatus').innerText = `Загружено картинок: ${Object.keys(imageCache).length}`;
+        document.getElementById('step2').style.opacity = "1";
+        document.getElementById('step2').style.pointer_events = "auto";
+    });
+
+    // 2. Обработка .CUT файла
+    document.getElementById('cutInput').addEventListener('change', function(e) {
         const file = e.target.files[0];
         const reader = new FileReader();
-        
         reader.onload = function(event) {
             const parser = new DOMParser();
             const xml = parser.parseFromString(event.target.result, "text/xml");
-            
-            const projectName = xml.querySelector('Project').getAttribute('Name'); // "Камол ака 2" [cite: 1]
-            document.getElementById('projectTitle').innerText = "Проект: " + projectName;
-
             const shapes = xml.querySelectorAll('Objective Shape');
             const grid = document.getElementById('partsGrid');
             grid.innerHTML = '';
 
             shapes.forEach(shape => {
-                const count = shape.getAttribute('Count');
-                const name = shape.getAttribute('Name'); // Например, "P2" [cite: 5]
-                const order = shape.getAttribute('Order'); // "Кровать купе" [cite: 5]
-
-                if (count !== "0") {
+                const count = shape.getAttribute('Count'); [cite: 6]
+                const name = shape.getAttribute('Name'); [cite: 6]
+                
+                if (count !== "0") { [cite: 6]
                     const card = document.createElement('div');
                     card.className = 'part-card';
-                    card.innerHTML = `
-                        <b>${name}</b>
-                        <small>${order}</small>
-                        <div style="font-size:10px; margin-top:5px;">Кол-во: ${count}</div>
-                    `;
+                    card.innerHTML = `<b>${name}</b><br><small>Кол-во: ${count}</small>`;
                     
-                    card.onclick = () => printBmp(name);
+                    card.onclick = () => {
+                        if (imageCache[name]) {
+                            const img = document.getElementById('toPrint');
+                            img.src = imageCache[name];
+                            setTimeout(() => { window.print(); }, 200);
+                        } else {
+                            alert(`Файл ${name}.bmp не был загружен на Шаге 1!`);
+                        }
+                    };
                     grid.appendChild(card);
                 }
             });
         };
         reader.readAsText(file);
     });
-
-    function printBmp(positionName) {
-        const imgElement = document.getElementById('labelImage');
-        // Формируем путь к картинке: P2.bmp
-        imgElement.src = imagePath + positionName + ".bmp";
-
-        imgElement.onload = function() {
-            window.print();
-        };
-
-        imgElement.onerror = function() {
-            alert("Файл " + positionName + ".bmp не найден в папке!");
-        };
-    }
 </script>
 
 </body>
