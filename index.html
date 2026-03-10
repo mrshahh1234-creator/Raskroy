@@ -2,100 +2,91 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Печать этикеток 80x60 - Без пустых листов</title>
+    <title>Мгновенная печать 80x60</title>
     <style>
-        /* Оформление интерфейса на экране */
-        body { font-family: sans-serif; background: #2c3e50; color: white; padding: 20px; margin: 0; }
-        .no-print { display: block; }
-        .setup-box { background: #34495e; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 2px dashed #7f8c8d; text-align: center; }
-        .sheet-block { background: #ecf0f1; color: #333; margin: 15px auto; padding: 15px; border-radius: 8px; max-width: 900px; }
+        body { font-family: sans-serif; background: #2c3e50; color: white; padding: 20px; text-align: center; margin: 0; }
+        .box { background: #34495e; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 2px dashed #7f8c8d; }
+        .sheet-block { background: #ecf0f1; color: #333; margin: 15px auto; padding: 15px; border-radius: 8px; max-width: 900px; text-align: left; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
-        .btn { background: #f1c40f; border: none; padding: 12px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; }
+        
+        /* Кнопка теперь выглядит как большая панель для быстрого нажатия */
+        .btn { 
+            background: #f1c40f; border: none; padding: 20px 10px; border-radius: 5px; 
+            cursor: pointer; font-weight: bold; width: 100%; font-size: 16px; 
+            box-shadow: 0 4px #d4ac0d; transition: 0.1s;
+        }
+        .btn:active { box-shadow: 0 0 #d4ac0d; transform: translateY(4px); }
+        .btn span { display: block; font-size: 12px; margin-top: 5px; color: #555; }
 
-        /* НАСТРОЙКИ ДЛЯ ПРИНТЕРА (80x60 мм) */
-        #print-area { display: none; }
+        /* Настройки для принтера */
+        #print-container { display: none; }
 
         @media print {
-            /* Скрываем всё, что не касается этикетки */
-            body, .no-print, .setup-box, .sheet-block, h2 { display: none !important; }
+            /* Полная изоляция страницы печати */
+            html, body { height: 60mm; width: 80mm; overflow: hidden !important; margin: 0 !important; padding: 0 !important; }
+            body * { visibility: hidden; display: none !important; }
             
-            html, body { 
-                height: 60mm; 
-                width: 80mm; 
-                margin: 0 !important; 
-                padding: 0 !important; 
-                overflow: hidden; 
-            }
-
-            #print-area { 
+            #print-container, #print-canvas { 
+                visibility: visible; 
                 display: block !important; 
-                position: absolute; 
-                left: 0; 
-                top: 0; 
+                position: fixed; 
+                left: 0; top: 0; 
                 width: 80mm; 
                 height: 60mm; 
-                page-break-after: avoid;
-                break-inside: avoid;
+                margin: 0; padding: 0;
             }
-
-            #print-area canvas { 
-                width: 80mm !important; 
-                height: 60mm !important; 
-                display: block;
-            }
-
+            
             @page { 
                 size: 80mm 60mm; 
-                margin: 0; 
+                margin: 0 !important; 
             }
         }
     </style>
 </head>
 <body>
 
-    <div class="no-print">
-        <div class="setup-box">
-            <h3>1. Загрузите BMP картинки</h3>
-            <input type="file" id="bmpInp" multiple accept=".bmp">
-        </div>
-
-        <div class="setup-box">
-            <h3>2. Загрузите файл проекта (Kamol aka 2.CUT)</h3>
-            <input type="file" id="cutInp">
-        </div>
-        <h2 id="projName" style="text-align:center;"></h2>
+    <div class="box">
+        <h3>1. Загрузите BMP картинки</h3>
+        <input type="file" id="bmpInp" multiple accept=".bmp">
+        <div id="bmpCount" style="margin-top:10px; color: #f1c40f;"></div>
     </div>
 
-    <div id="content" class="no-print"></div>
+    <div class="box">
+        <h3>2. Загрузите файл .CUT</h3>
+        <input type="file" id="cutInp">
+    </div>
 
-    <div id="print-area">
+    <div id="content"></div>
+
+    <div id="print-container">
         <canvas id="print-canvas"></canvas>
     </div>
 
 <script>
     let images = {};
 
+    // 1. Чтение картинок
     document.getElementById('bmpInp').onchange = function(e) {
         for (let f of e.target.files) {
             let n = f.name.split('.')[0].trim();
             images[n] = URL.createObjectURL(f);
         }
+        document.getElementById('bmpCount').innerText = "Готово к печати: " + Object.keys(images).length + " шт.";
     };
 
+    // 2. Чтение CUT и мгновенная привязка печати к кнопкам
     document.getElementById('cutInp').onchange = function(e) {
         let r = new FileReader();
         r.onload = function(ev) {
             let xml = new DOMParser().parseFromString(ev.target.result, "text/xml");
-            let proj = xml.querySelector('Project').getAttribute('Name');
-            document.getElementById('projName').innerText = "Проект: " + proj;
-            
             let out = document.getElementById('content');
             out.innerHTML = '';
 
             xml.querySelectorAll('Layout').forEach((lay, i) => {
-                let div = document.createElement('div');
-                div.className = 'sheet-block';
-                div.innerHTML = `<h3>ЛИСТ №${parseInt(lay.getAttribute('ID')) + 1}</h3>`;
+                let sheetDiv = document.createElement('div');
+                sheetDiv.className = 'sheet-block';
+                sheetDiv.innerHTML = `<h3 style="margin-top:0; color:#2980b9;">ЛИСТ №${i+1}</h3>`;
+                
                 let grid = document.createElement('div');
                 grid.className = 'grid';
 
@@ -106,21 +97,28 @@
                         let name = shape.getAttribute('Name');
                         let b = document.createElement('button');
                         b.className = 'btn';
-                        b.innerHTML = `${p.getAttribute('X')} x ${p.getAttribute('Y')}<br>Поз: ${name}`;
+                        // Текст на кнопке крупно
+                        b.innerHTML = `${p.getAttribute('X')} x ${p.getAttribute('Y')} <span>Позиция: ${name}</span>`;
+                        
+                        // МГНОВЕННАЯ ПЕЧАТЬ ПРИ КЛИКЕ
                         b.onclick = () => prepareAndPrint(name);
+                        
                         grid.appendChild(b);
                     }
                 });
-                div.appendChild(grid);
-                out.appendChild(div);
+                sheetDiv.appendChild(grid);
+                out.appendChild(sheetDiv);
             });
         };
         r.readAsText(e.target.files[0]);
     };
 
     function prepareAndPrint(name) {
-        if (!images[name]) return alert("Нет картинки для " + name);
-        
+        if (!images[name]) {
+            alert("Ошибка: Файл " + name + ".bmp не загружен!");
+            return;
+        }
+
         const canvas = document.getElementById('print-canvas');
         const ctx = canvas.getContext('2d');
         const img = new Image();
@@ -131,9 +129,8 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0);
 
-            setTimeout(() => {
-                window.print();
-            }, 50);
+            // Мгновенный вызов окна печати
+            window.print();
         };
         img.src = images[name];
     }
