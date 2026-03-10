@@ -2,132 +2,94 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <title>Печать готовых BMP этикеток</title>
     <style>
-        /* Стили для экрана */
-        body { font-family: "Arial", sans-serif; background: #555; display: flex; justify-content: center; padding: 20px; }
-        .label-preview { 
-            width: 100mm; height: 72mm; background: white; padding: 5mm; 
-            box-sizing: border-box; position: relative; border: 1px solid #000;
-        }
+        body { font-family: sans-serif; background: #2c3e50; color: white; display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        .controls { background: #34495e; padding: 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); width: 100%; max-width: 600px; text-align: center; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; width: 100%; max-width: 1000px; margin-top: 20px; }
+        .part-card { background: #ecf0f1; color: #2c3e50; padding: 10px; border-radius: 5px; cursor: pointer; text-align: center; transition: 0.2s; }
+        .part-card:hover { background: #3498db; color: white; transform: scale(1.05); }
+        .part-card b { font-size: 18px; display: block; }
         
-        /* Стили элементов как на картинке */
-        .header-logo { font-weight: bold; font-size: 24px; border-bottom: 2px solid black; margin-bottom: 5px; display: flex; justify-content: space-between; }
-        .info-block { font-size: 14px; line-height: 1.2; }
-        .info-block b { font-size: 16px; }
-        
-        .main-size { font-size: 32px; font-weight: bold; text-align: center; margin: 15px 0; }
-        
-        .qr-container { position: absolute; right: 5mm; top: 25mm; text-align: center; }
-        .qr-code { width: 80px; height: 80px; }
-        .qr-text { font-size: 10px; margin-top: 2px; }
+        #print-preview { display: none; }
 
-        .edge-info { border: 2px solid black; display: inline-block; padding: 2px 10px; font-weight: bold; font-size: 18px; margin-left: 40%; }
-        
-        .footer-date { position: absolute; bottom: 2mm; right: 2mm; font-size: 12px; }
-
-        /* Кнопка загрузки */
-        .controls { position: fixed; left: 20px; top: 20px; background: white; padding: 15px; border-radius: 8px; }
-        
         @media print {
-            .controls { display: none; }
-            body { background: none; padding: 0; }
-            .label-preview { border: none; }
+            body * { visibility: hidden; }
+            #print-preview, #print-preview img { visibility: visible; position: absolute; left: 0; top: 0; width: 100%; }
+            @page { margin: 0; }
         }
     </style>
 </head>
 <body>
 
 <div class="controls">
-    <h3>Печать этикеток</h3>
-    <input type="file" id="fileInput" accept=".cut"><br><br>
-    <div id="list" style="max-height: 400px; overflow-y: auto;"></div>
+    <h2>Печать этикеток (BMP)</h2>
+    <p>1. Выберите файл .CUT из GitLab/папки</p>
+    <input type="file" id="fileInput" accept=".cut">
+    <div id="projectTitle" style="margin-top:15px; font-weight:bold; color:#f1c40f;"></div>
 </div>
 
-<div id="printArea">
-    </div>
+<div class="grid" id="partsGrid"></div>
+
+<div id="print-preview">
+    <img id="labelImage" src="" alt="label">
+</div>
 
 <script>
-document.getElementById('fileInput').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    const reader = new FileReader();
-    reader.onload = function(event) {
-        const parser = new DOMParser();
-        const xml = parser.parseFromString(event.target.result, "text/xml");
-        const projectName = xml.querySelector('Project').getAttribute('Name');
-        const matType = xml.querySelector('Data').getAttribute('TypeName');
-        const updateDate = xml.querySelector('Project').getAttribute('Update');
+    // Если картинки лежат в другой папке, укажите путь здесь, например: "labels/"
+    const imagePath = ""; 
+
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
         
-        const shapes = xml.querySelectorAll('Objective Shape');
-        const listDiv = document.getElementById('list');
-        listDiv.innerHTML = '<b>Выберите деталь:</b><br>';
-
-        shapes.forEach(s => {
-            if(s.getAttribute('Count') !== "0") {
-                const btn = document.createElement('button');
-                btn.style.display = "block";
-                btn.style.margin = "5px 0";
-                btn.innerText = `${s.getAttribute('Name')} (${s.getAttribute('X')}x${s.getAttribute('Y')})`;
-                btn.onclick = () => renderLabel({
-                    mat: matType,
-                    project: projectName,
-                    model: s.getAttribute('Order'),
-                    nomi: s.getAttribute('Name'),
-                    soni: s.getAttribute('Count'),
-                    x: s.getAttribute('X'),
-                    y: s.getAttribute('Y'),
-                    date: updateDate
-                });
-                listDiv.appendChild(btn);
-            }
-        });
-    };
-    reader.readAsText(file);
-});
-
-function renderLabel(d) {
-    const area = document.getElementById('printArea');
-    area.innerHTML = `
-        <div class="label-preview">
-            <div class="header-logo">
-                <span>TABRIZ GROUP</span>
-                <span style="font-size: 10px;">MUSTAFAYEV ACADEMY</span>
-            </div>
+        reader.onload = function(event) {
+            const parser = new DOMParser();
+            const xml = parser.parseFromString(event.target.result, "text/xml");
             
-            <div class="info-block">
-                <b>Mat:</b> ${d.mat}<br>
-                <b>№:</b> ${d.project}<br>
-                <b>Model:</b> ${d.model} <span style="margin-left:40px;"><b>Soni:</b> ${d.soni}</span><br>
-                <b>Nomi:</b> №01.02 ${d.nomi}
-            </div>
+            const projectName = xml.querySelector('Project').getAttribute('Name'); // "Камол ака 2" [cite: 1]
+            document.getElementById('projectTitle').innerText = "Проект: " + projectName;
 
-            <div class="main-size">${d.x} x ${d.y}</div>
+            const shapes = xml.querySelectorAll('Objective Shape');
+            const grid = document.getElementById('partsGrid');
+            grid.innerHTML = '';
 
-            <div class="edge-info">1X19 мм Узидан</div>
+            shapes.forEach(shape => {
+                const count = shape.getAttribute('Count');
+                const name = shape.getAttribute('Name'); // Например, "P2" [cite: 5]
+                const order = shape.getAttribute('Order'); // "Кровать купе" [cite: 5]
 
-            <div class="qr-container">
-                <div id="qrcode"></div>
-                <div class="qr-text">2603091312033055500021</div>
-            </div>
-
-            <div style="margin-top:20px; border-top: 1px solid black; height: 40px; width: 80%; position: relative;">
-                 <span style="position: absolute; right: -25px; top: 10px; transform: rotate(90deg); font-size: 12px;">${d.x}</span>
-                 <span style="position: absolute; bottom: -18px; left: 45%; font-size: 12px;">(A) 1<br>${d.y}</span>
-            </div>
-
-            <div class="footer-date">${d.date}</div>
-        </div>
-    `;
-
-    new QRCode(document.getElementById("qrcode"), {
-        text: d.nomi,
-        width: 80,
-        height: 80,
-        correctLevel : QRCode.CorrectLevel.H
+                if (count !== "0") {
+                    const card = document.createElement('div');
+                    card.className = 'part-card';
+                    card.innerHTML = `
+                        <b>${name}</b>
+                        <small>${order}</small>
+                        <div style="font-size:10px; margin-top:5px;">Кол-во: ${count}</div>
+                    `;
+                    
+                    card.onclick = () => printBmp(name);
+                    grid.appendChild(card);
+                }
+            });
+        };
+        reader.readAsText(file);
     });
 
-    setTimeout(() => { window.print(); }, 500);
-}
+    function printBmp(positionName) {
+        const imgElement = document.getElementById('labelImage');
+        // Формируем путь к картинке: P2.bmp
+        imgElement.src = imagePath + positionName + ".bmp";
+
+        imgElement.onload = function() {
+            window.print();
+        };
+
+        imgElement.onerror = function() {
+            alert("Файл " + positionName + ".bmp не найден в папке!");
+        };
+    }
 </script>
+
 </body>
 </html>
