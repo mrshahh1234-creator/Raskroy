@@ -2,184 +2,132 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Mustafayev Academy | Production</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        :root { --accent: #2ecc71; --bg: #0f1215; --card: #1c2227; --text: #e0e6ed; }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; flex-direction: column; height: 100vh; }
-        
-        /* Шапка */
-        .header { background: #1a1a1a; padding: 15px 25px; display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--accent); }
-        .logo { font-size: 20px; font-weight: bold; text-transform: uppercase; }
-        .logo span { color: var(--accent); }
-        .btn-load { background: var(--accent); color: #000; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; border-radius: 6px; }
-
-        /* Контент */
-        .main { flex: 1; padding: 20px; overflow-y: auto; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
-        
-        /* Карточка детали */
-        .card { 
-            background: var(--card); border: 1px solid #333; border-radius: 12px; padding: 15px; 
-            cursor: pointer; position: relative; transition: 0.2s;
+        /* Стили для экрана */
+        body { font-family: "Arial", sans-serif; background: #555; display: flex; justify-content: center; padding: 20px; }
+        .label-preview { 
+            width: 100mm; height: 72mm; background: white; padding: 5mm; 
+            box-sizing: border-box; position: relative; border: 1px solid #000;
         }
-        .card:hover { border-color: var(--accent); background: #252b33; }
-        .p-name { font-size: 14px; color: #888; margin-bottom: 8px; }
-        .p-size { font-size: 32px; font-weight: bold; }
-        .icons { position: absolute; top: 15px; right: 15px; font-size: 20px; }
-        .click-hint { font-size: 10px; color: var(--accent); margin-top: 10px; font-weight: bold; }
+        
+        /* Стили элементов как на картинке */
+        .header-logo { font-weight: bold; font-size: 24px; border-bottom: 2px solid black; margin-bottom: 5px; display: flex; justify-content: space-between; }
+        .info-block { font-size: 14px; line-height: 1.2; }
+        .info-block b { font-size: 16px; }
+        
+        .main-size { font-size: 32px; font-weight: bold; text-align: center; margin: 15px 0; }
+        
+        .qr-container { position: absolute; right: 5mm; top: 25mm; text-align: center; }
+        .qr-code { width: 80px; height: 80px; }
+        .qr-text { font-size: 10px; margin-top: 2px; }
 
-        /* Стили, которые полетят на принтер (внутри Iframe) */
-        #print-template { display: none; }
+        .edge-info { border: 2px solid black; display: inline-block; padding: 2px 10px; font-weight: bold; font-size: 18px; margin-left: 40%; }
+        
+        .footer-date { position: absolute; bottom: 2mm; right: 2mm; font-size: 12px; }
+
+        /* Кнопка загрузки */
+        .controls { position: fixed; left: 20px; top: 20px; background: white; padding: 15px; border-radius: 8px; }
+        
+        @media print {
+            .controls { display: none; }
+            body { background: none; padding: 0; }
+            .label-preview { border: none; }
+        }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <div class="logo">MUSTAFAYEV <span>ACADEMY</span></div>
-    <div>
-        <input type="file" id="fileInput" style="display:none" accept=".project">
-        <button class="btn-load" onclick="document.getElementById('fileInput').click()">ЗАГРУЗИТЬ .PROJECT</button>
+<div class="controls">
+    <h3>Печать этикеток</h3>
+    <input type="file" id="fileInput" accept=".cut"><br><br>
+    <div id="list" style="max-height: 400px; overflow-y: auto;"></div>
+</div>
+
+<div id="printArea">
     </div>
-</div>
-
-<div class="main">
-    <div id="grid" class="grid"></div>
-</div>
-
-<div id="print-template">
-    <div style="width: 54mm; font-family: Arial, sans-serif; color: black; padding: 2mm;">
-        <div style="text-align: center; font-weight: bold; border-bottom: 1px solid black; margin-bottom: 2mm; font-size: 10pt;">
-            MUSTAFAYEV ACADEMY
-        </div>
-        <div id="tpl-project" style="font-size: 8pt;"></div>
-        <div id="tpl-name" style="font-size: 11pt; font-weight: bold; margin: 1mm 0;"></div>
-        <div id="tpl-mat" style="font-size: 8pt; margin-bottom: 2mm;"></div>
-        
-        <div id="tpl-box" style="border: 1px solid #ccc; text-align: center; padding: 5mm 0; font-size: 26pt; font-weight: bold;">
-            <span id="tpl-size"></span>
-        </div>
-
-        <div style="display: flex; justify-content: space-between; margin-top: 2mm; border-top: 1px solid black; padding-top: 1mm;">
-            <div id="tpl-edge" style="font-size: 8pt; width: 70%;"></div>
-            <div id="tpl-icons" style="font-size: 14pt;"></div>
-        </div>
-    </div>
-</div>
 
 <script>
-    let queue = [];
-    let projData = { name: "", mat: "", edge: "" };
+document.getElementById('fileInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        const parser = new DOMParser();
+        const xml = parser.parseFromString(event.target.result, "text/xml");
+        const projectName = xml.querySelector('Project').getAttribute('Name');
+        const matType = xml.querySelector('Data').getAttribute('TypeName');
+        const updateDate = xml.querySelector('Project').getAttribute('Update');
+        
+        const shapes = xml.querySelectorAll('Objective Shape');
+        const listDiv = document.getElementById('list');
+        listDiv.innerHTML = '<b>Выберите деталь:</b><br>';
 
-    document.getElementById('fileInput').onchange = function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(ev) {
-            const parser = new DOMParser();
-            const xml = parser.parseFromString(ev.target.result, "text/xml");
-            
-            projData.name = xml.querySelector("good[typeId='product']")?.getAttribute("name") || "Заказ";
-            projData.mat = xml.querySelector("good[typeId='sheet']")?.getAttribute("name") || "ЛДСП";
-            projData.edge = xml.querySelector("good[typeId='band']")?.getAttribute("name") || "Кромка";
-
-            const tech = {};
-            const ops = xml.getElementsByTagName("operation");
-            for (let op of ops) {
-                if (op.getAttribute("typeId") === "XNC") {
-                    const isB = (op.getAttribute("program") || "").includes("Bore");
-                    const isM = (op.getAttribute("program") || "").includes("Mill");
-                    const pRefs = op.getElementsByTagName("part");
-                    for (let r of pRefs) {
-                        const id = r.getAttribute("id");
-                        if (!tech[id]) tech[id] = { b: false, m: false };
-                        if (isB) tech[id].b = true;
-                        if (isM) tech[id].m = true;
-                    }
-                }
+        shapes.forEach(s => {
+            if(s.getAttribute('Count') !== "0") {
+                const btn = document.createElement('button');
+                btn.style.display = "block";
+                btn.style.margin = "5px 0";
+                btn.innerText = `${s.getAttribute('Name')} (${s.getAttribute('X')}x${s.getAttribute('Y')})`;
+                btn.onclick = () => renderLabel({
+                    mat: matType,
+                    project: projectName,
+                    model: s.getAttribute('Order'),
+                    nomi: s.getAttribute('Name'),
+                    soni: s.getAttribute('Count'),
+                    x: s.getAttribute('X'),
+                    y: s.getAttribute('Y'),
+                    date: updateDate
+                });
+                listDiv.appendChild(btn);
             }
-
-            queue = [];
-            const parts = xml.getElementsByTagName("part");
-            for (let p of parts) {
-                if (p.parentNode.nodeName === "good" && p.hasAttribute("dl")) {
-                    const id = p.getAttribute("id");
-                    const count = parseInt(p.getAttribute("count")) || 1;
-                    for (let c = 0; c < count; c++) {
-                        queue.push({
-                            id: id,
-                            name: p.getAttribute("name"),
-                            l: Math.round(parseFloat(p.getAttribute("dl"))),
-                            w: Math.round(parseFloat(p.getAttribute("dw"))),
-                            edge: { t: p.hasAttribute("elt"), b: p.hasAttribute("elb"), l: p.hasAttribute("ell"), r: p.hasAttribute("elr") },
-                            bore: tech[id]?.b || false, mill: tech[id]?.m || false
-                        });
-                    }
-                }
-            }
-            render();
-        };
-        reader.readAsText(file, "windows-1251");
-    };
-
-    function render() {
-        const grid = document.getElementById('grid');
-        grid.innerHTML = '';
-        queue.forEach((item, index) => {
-            const card = document.createElement('div');
-            card.className = 'card';
-            card.innerHTML = `
-                <div class="icons">${item.bore ? '🔩' : ''} ${item.mill ? '🌀' : ''}</div>
-                <div class="p-name">${item.name}</div>
-                <div class="p-size">${item.l} × ${item.w}</div>
-                <div class="click-hint">ПЕЧАТЬ</div>
-            `;
-            card.onclick = () => printPart(index);
-            grid.appendChild(card);
         });
-    }
+    };
+    reader.readAsText(file);
+});
 
-    function printPart(index) {
-        const item = queue[index];
-        
-        // Заполняем шаблон
-        document.getElementById('tpl-project').innerText = "Проект: " + projData.name;
-        document.getElementById('tpl-name').innerText = item.name;
-        document.getElementById('tpl-mat').innerText = "Мат: " + projData.mat;
-        document.getElementById('tpl-size').innerText = `${item.l} x ${item.w}`;
-        document.getElementById('tpl-icons').innerText = (item.bore ? '🔩' : '') + (item.mill ? ' 🌀' : '');
-        
-        const hasEdge = (item.edge.t || item.edge.b || item.edge.l || item.edge.r);
-        document.getElementById('tpl-edge').innerText = hasEdge ? "Кромка: " + projData.edge : "";
-
-        const box = document.getElementById('tpl-box');
-        box.style.borderTop = item.edge.t ? "6pt solid black" : "1pt solid #ccc";
-        box.style.borderBottom = item.edge.b ? "6pt solid black" : "1pt solid #ccc";
-        box.style.borderLeft = item.edge.l ? "6pt solid black" : "1pt solid #ccc";
-        box.style.borderRight = item.edge.r ? "6pt solid black" : "1pt solid #ccc";
-
-        // ПЕЧАТЬ ЧЕРЕЗ IFRAME (решает проблему пустого листа)
-        const iframe = document.createElement('iframe');
-        iframe.style.position = 'fixed';
-        iframe.style.right = '100%';
-        iframe.style.bottom = '100%';
-        document.body.appendChild(iframe);
-        
-        const doc = iframe.contentWindow.document;
-        doc.open();
-        doc.write('<html><body style="margin:0;">' + document.getElementById('print-template').innerHTML + '</body></html>');
-        doc.close();
-
-        setTimeout(() => {
-            iframe.contentWindow.focus();
-            iframe.contentWindow.print();
-            document.body.removeChild(iframe);
+function renderLabel(d) {
+    const area = document.getElementById('printArea');
+    area.innerHTML = `
+        <div class="label-preview">
+            <div class="header-logo">
+                <span>TABRIZ GROUP</span>
+                <span style="font-size: 10px;">MUSTAFAYEV ACADEMY</span>
+            </div>
             
-            // Удаляем из очереди только после закрытия окна печати
-            queue.splice(index, 1);
-            render();
-        }, 500);
-    }
+            <div class="info-block">
+                <b>Mat:</b> ${d.mat}<br>
+                <b>№:</b> ${d.project}<br>
+                <b>Model:</b> ${d.model} <span style="margin-left:40px;"><b>Soni:</b> ${d.soni}</span><br>
+                <b>Nomi:</b> №01.02 ${d.nomi}
+            </div>
+
+            <div class="main-size">${d.x} x ${d.y}</div>
+
+            <div class="edge-info">1X19 мм Узидан</div>
+
+            <div class="qr-container">
+                <div id="qrcode"></div>
+                <div class="qr-text">2603091312033055500021</div>
+            </div>
+
+            <div style="margin-top:20px; border-top: 1px solid black; height: 40px; width: 80%; position: relative;">
+                 <span style="position: absolute; right: -25px; top: 10px; transform: rotate(90deg); font-size: 12px;">${d.x}</span>
+                 <span style="position: absolute; bottom: -18px; left: 45%; font-size: 12px;">(A) 1<br>${d.y}</span>
+            </div>
+
+            <div class="footer-date">${d.date}</div>
+        </div>
+    `;
+
+    new QRCode(document.getElementById("qrcode"), {
+        text: d.nomi,
+        width: 80,
+        height: 80,
+        correctLevel : QRCode.CorrectLevel.H
+    });
+
+    setTimeout(() => { window.print(); }, 500);
+}
 </script>
 </body>
 </html>
