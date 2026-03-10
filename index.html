@@ -2,109 +2,149 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Печать этикеток AutoCUT (Исправленный)</title>
+    <title>Печать по листам и размерам</title>
     <style>
-        body { font-family: sans-serif; background: #2c3e50; color: white; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .setup-box { background: #34495e; padding: 20px; border-radius: 10px; margin-bottom: 20px; width: 100%; max-width: 600px; text-align: center; border: 2px dashed #7f8c8d; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; width: 100%; max-width: 1000px; }
-        .part-card { background: #ecf0f1; color: #2c3e50; padding: 10px; border-radius: 5px; cursor: pointer; text-align: center; border: none; width: 100%; }
-        .part-card:hover { background: #3498db; color: white; }
-        .part-card.missing { opacity: 0.5; background: #95a5a6; cursor: not-allowed; }
-        .status { font-size: 14px; margin-top: 10px; color: #f1c40f; font-weight: bold; }
+        body { font-family: sans-serif; background: #2c3e50; color: white; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; }
+        .setup-box { background: #34495e; padding: 20px; border-radius: 10px; margin-bottom: 20px; text-align: center; border: 2px dashed #7f8c8d; }
         
+        .sheet-block { background: #ecf0f1; color: #2c3e50; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
+        .sheet-header { border-bottom: 2px solid #bdc3c7; margin-bottom: 10px; padding-bottom: 5px; font-weight: bold; font-size: 20px; color: #2980b9; }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+        .size-btn { background: #f1c40f; border: none; padding: 15px; border-radius: 5px; cursor: pointer; font-weight: bold; text-align: center; transition: 0.2s; }
+        .size-btn:hover { background: #f39c12; transform: translateY(-2px); }
+        .size-btn span { display: block; font-size: 11px; font-weight: normal; margin-top: 5px; color: #34495e; }
+
+        .status-ok { color: #2ecc71; font-weight: bold; }
         #print-area { display: none; }
         @media print {
             body * { visibility: hidden; }
-            #print-area, #print-area img { visibility: visible; position: absolute; left: 0; top: 0; width: 100%; }
+            #print-area, #print-area img { visibility: visible; position: fixed; left: 0; top: 0; width: 100%; }
             @page { margin: 0; }
         }
     </style>
 </head>
 <body>
 
-<div class="setup-box">
-    <h3>Шаг 1: Загрузите все картинки (.bmp)</h3>
-    <input type="file" id="bmpInput" multiple accept=".bmp">
-    <div id="bmpStatus" class="status">Картинки не выбраны</div>
-</div>
+<div class="container">
+    <div class="setup-box">
+        <h3>1. Загрузите картинки (BMP)</h3>
+        <input type="file" id="bmpInput" multiple accept=".bmp">
+        <div id="bmpStatus" style="margin-top:5px;"></div>
+    </div>
 
-<div class="setup-box" id="step2" style="opacity: 0.5; pointer-events: none;">
-    <h3>Шаг 2: Выберите файл проекта (.cut)</h3>
-    <input type="file" id="cutInput" accept=".cut">
-</div>
+    <div class="setup-box" id="step2" style="opacity: 0.5; pointer-events: none;">
+        <h3>2. Загрузите файл проекта (.CUT)</h3>
+        <input type="file" id="cutInput" accept=".cut">
+    </div>
 
-<div id="projectInfo" style="margin-bottom: 15px; font-size: 18px;"></div>
-<div class="grid" id="partsGrid"></div>
+    <h2 id="projName" style="text-align:center; color: #f1c40f;"></h2>
+    <div id="sheetsContainer"></div>
+</div>
 
 <div id="print-area"><img id="toPrint" src=""></div>
 
 <script>
     let imageCache = {};
+    let fullProjectData = [];
 
-    // 1. Обработка картинок
+    // 1. Чтение картинок
     document.getElementById('bmpInput').addEventListener('change', function(e) {
         const files = e.target.files;
-        if (files.length === 0) return;
-
-        imageCache = {}; // Очистка старого кэша
         for (let file of files) {
-            // Очищаем имя: удаляем расширение и лишние пробелы
             const name = file.name.split('.').slice(0, -1).join('.').trim();
             imageCache[name] = URL.createObjectURL(file);
         }
-
-        document.getElementById('bmpStatus').innerText = "✅ Загружено картинок: " + Object.keys(imageCache).length;
-        
-        // Активируем Шаг 2 (исправлено)
-        const s2 = document.getElementById('step2');
-        s2.style.opacity = "1";
-        s2.style.pointerEvents = "auto";
+        document.getElementById('bmpStatus').innerHTML = `<span class="status-ok">✅ Загружено картинок: ${Object.keys(imageCache).length}</span>`;
+        document.getElementById('step2').style.opacity = "1";
+        document.getElementById('step2').style.pointerEvents = "auto";
     });
 
-    // 2. Обработка .CUT файла
+    // 2. Чтение CUT и распределение по листам
     document.getElementById('cutInput').addEventListener('change', function(e) {
         const file = e.target.files[0];
-        if (!file) return;
-
         const reader = new FileReader();
         reader.onload = function(event) {
             const parser = new DOMParser();
             const xml = parser.parseFromString(event.target.result, "text/xml");
             
-            const projectName = xml.querySelector('Project').getAttribute('Name');
-            document.getElementById('projectInfo').innerText = "Проект: " + projectName;
+            const projectTitle = xml.querySelector('Project').getAttribute('Name');
+            document.getElementById('projName').innerText = "Проект: " + projectTitle;
 
-            const shapes = xml.querySelectorAll('Objective Shape');
-            const grid = document.getElementById('partsGrid');
-            grid.innerHTML = '';
+            // Находим все листы (Layout)
+            const layouts = xml.querySelectorAll('Layout');
+            const sheetsContainer = document.getElementById('sheetsContainer');
+            sheetsContainer.innerHTML = '';
 
-            shapes.forEach(shape => {
-                const count = parseInt(shape.getAttribute('Count'));
-                const name = shape.getAttribute('Name').trim();
+            layouts.forEach((layout, index) => {
+                const sheetID = layout.getAttribute('ID');
+                const sheetName = layout.getAttribute('SheetName') || "Лист";
+                const partsInSheet = layout.querySelectorAll('Part[UID]'); // Только детали с ID
+
+                // Создаем блок листа
+                const sheetBlock = document.createElement('div');
+                sheetBlock.className = 'sheet-block';
+                sheetBlock.innerHTML = `<div class="sheet-header">ЛИСТ №${parseInt(sheetID) + 1} (${sheetName})</div>`;
                 
-                if (count > 0) {
-                    const card = document.createElement('button');
-                    const isFound = imageCache.hasOwnProperty(name);
+                const grid = document.createElement('div');
+                grid.className = 'grid';
+
+                // Группируем детали этого листа по размерам
+                let sizesInSheet = {};
+                partsInSheet.forEach(p => {
+                    const x = p.getAttribute('X');
+                    const y = p.getAttribute('Y');
+                    const uid = p.getAttribute('UID');
                     
-                    card.className = 'part-card' + (isFound ? '' : ' missing');
-                    card.innerHTML = `<b>${name}</b><br><small>Кол-во: ${count}</small>` + 
-                                     (!isFound ? '<br><i style="color:red;font-size:10px;">Нет BMP</i>' : '');
+                    // Ищем имя детали (Name) в основном списке Objective по UID или порядку
+                    // В AutoCUT UID обычно соответствует порядку в Objective
+                    const allShapes = xml.querySelectorAll('Objective Shape');
+                    const shapeInfo = allShapes[uid]; 
                     
-                    if (isFound) {
-                        card.onclick = () => {
-                            const img = document.getElementById('toPrint');
-                            img.src = imageCache[name];
-                            img.onload = () => { window.print(); };
-                        };
-                    } else {
-                        card.onclick = () => alert("Файл " + name + ".bmp не найден среди загруженных!");
+                    if (shapeInfo) {
+                        const name = shapeInfo.getAttribute('Name');
+                        const sizeKey = `${x} x ${y}`;
+                        if (!sizesInSheet[sizeKey]) sizesInSheet[sizeKey] = [];
+                        sizesInSheet[sizeKey].push(name);
                     }
-                    grid.appendChild(card);
-                }
+                });
+
+                // Создаем кнопки размеров для этого листа
+                Object.keys(sizesInSheet).forEach(size => {
+                    const btn = document.createElement('button');
+                    btn.className = 'size-btn';
+                    const names = [...new Set(sizesInSheet[size])]; // Уникальные имена
+                    
+                    btn.innerHTML = `${size} <span>Детали: ${names.join(', ')}</span>`;
+                    
+                    btn.onclick = () => {
+                        if (names.length === 1) {
+                            doPrint(names[0]);
+                        } else {
+                            const choice = prompt(`На этом листе несколько деталей этого размера:\n${names.join(', ')}\nВведите нужную:`, names[0]);
+                            if (choice) doPrint(choice.trim());
+                        }
+                    };
+                    grid.appendChild(btn);
+                });
+
+                sheetBlock.appendChild(grid);
+                sheetsContainer.appendChild(sheetBlock);
             });
         };
         reader.readAsText(file);
     });
+
+    function doPrint(name) {
+        if (!imageCache[name]) {
+            alert(`Файл ${name}.bmp не найден!`);
+            return;
+        }
+        const img = document.getElementById('toPrint');
+        img.src = imageCache[name];
+        img.onload = () => window.print();
+    }
 </script>
 
 </body>
