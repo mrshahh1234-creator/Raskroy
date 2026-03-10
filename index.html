@@ -2,78 +2,64 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Печать 80x60</title>
+    <title>Печать этикеток 80x60</title>
     <style>
-        /* Оформление интерфейса */
         body { font-family: sans-serif; background: #2c3e50; color: white; padding: 20px; text-align: center; }
         .box { background: #34495e; padding: 20px; border-radius: 10px; margin-bottom: 20px; border: 2px dashed #7f8c8d; }
         .sheet-block { background: #ecf0f1; color: #333; margin: 15px auto; padding: 15px; border-radius: 8px; max-width: 900px; text-align: left; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-top: 10px; }
-        .btn { background: #f1c40f; border: none; padding: 12px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+        .btn { background: #f1c40f; border: none; padding: 15px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; font-size: 14px; }
         .btn:hover { background: #d4ac0d; }
 
-        /* НАСТРОЙКИ ПЕЧАТИ (80мм x 60мм) */
-        #print-area { display: none; }
+        /* Настройки для принтера */
+        #print-container { display: none; }
 
         @media print {
-            /* Скрываем всё, кроме картинки */
-            body * { display: none !important; }
-            
-            #print-area { 
+            body * { visibility: hidden; }
+            #print-container, #print-canvas { 
+                visibility: visible; 
                 display: block !important; 
-                position: absolute; 
-                left: 0; 
-                top: 0; 
+                position: fixed; 
+                left: 0; top: 0; 
                 width: 80mm; 
                 height: 60mm; 
-                margin: 0; 
-                padding: 0;
-                overflow: hidden;
             }
-
-            #print-area img { 
-                width: 80mm; 
-                height: 60mm; 
-                display: block;
-                object-fit: contain; /* Сохраняет пропорции BMP внутри 8х6 см */
-            }
-
-            @page { 
-                size: 80mm 60mm; 
-                margin: 0; 
-            }
+            @page { size: 80mm 60mm; margin: 0; }
         }
     </style>
 </head>
 <body>
 
     <div class="box">
-        <h3>1. Выберите BMP картинки</h3>
+        <h3>1. Загрузите BMP картинки</h3>
         <input type="file" id="bmpInp" multiple accept=".bmp">
+        <div id="bmpCount" style="margin-top:10px; color: #f1c40f;"></div>
     </div>
 
     <div class="box">
-        <h3>2. Выберите .CUT файл</h3>
+        <h3>2. Загрузите файл .CUT</h3>
         <input type="file" id="cutInp">
     </div>
 
     <div id="content"></div>
 
-    <div id="print-area"><img id="pic"></div>
+    <div id="print-container">
+        <canvas id="print-canvas"></canvas>
+    </div>
 
 <script>
     let images = {};
 
-    // Загрузка картинок
+    // 1. Читаем картинки
     document.getElementById('bmpInp').onchange = function(e) {
         for (let f of e.target.files) {
             let n = f.name.split('.')[0].trim();
             images[n] = URL.createObjectURL(f);
         }
-        alert("Загружено: " + Object.keys(images).length);
+        document.getElementById('bmpCount').innerText = "Загружено: " + Object.keys(images).length + " шт.";
     };
 
-    // Загрузка файла и создание кнопок по листам
+    // 2. Читаем CUT и создаем кнопки по ЛИСТАМ
     document.getElementById('cutInp').onchange = function(e) {
         let r = new FileReader();
         r.onload = function(ev) {
@@ -82,9 +68,10 @@
             out.innerHTML = '';
 
             xml.querySelectorAll('Layout').forEach((lay, i) => {
-                let div = document.createElement('div');
-                div.className = 'sheet-block';
-                div.innerHTML = `<b>ЛИСТ №${i+1}</b>`;
+                let sheetDiv = document.createElement('div');
+                sheetDiv.className = 'sheet-block';
+                sheetDiv.innerHTML = `<h3 style="margin-top:0; color:#2980b9;">ЛИСТ №${i+1}</h3>`;
+                
                 let grid = document.createElement('div');
                 grid.className = 'grid';
 
@@ -95,22 +82,45 @@
                         let name = shape.getAttribute('Name');
                         let b = document.createElement('button');
                         b.className = 'btn';
-                        b.innerHTML = `${p.getAttribute('X')}x${p.getAttribute('Y')}<br>${name}`;
-                        b.onclick = () => {
-                            if (!images[name]) return alert("Нет BMP для " + name);
-                            let img = document.getElementById('pic');
-                            img.src = images[name];
-                            img.onload = () => { setTimeout(() => window.print(), 100); };
-                        };
+                        b.innerHTML = `Размер: ${p.getAttribute('X')}x${p.getAttribute('Y')}<br>Поз: ${name}`;
+                        b.onclick = () => prepareAndPrint(name);
                         grid.appendChild(b);
                     }
                 });
-                div.appendChild(grid);
-                out.appendChild(div);
+                sheetDiv.appendChild(grid);
+                out.appendChild(sheetDiv);
             });
         };
         r.readAsText(e.target.files[0]);
     };
+
+    // 3. Функция подготовки и печати через Canvas
+    function prepareAndPrint(name) {
+        if (!images[name]) {
+            alert("Картинка " + name + ".bmp не найдена!");
+            return;
+        }
+
+        const canvas = document.getElementById('print-canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+
+        img.onload = function() {
+            // Устанавливаем размер холста (высокое разрешение для печати)
+            canvas.width = img.width;
+            canvas.height = img.height;
+            
+            // Рисуем картинку на холст
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+
+            // Даем браузеру время на отрисовку и вызываем печать
+            setTimeout(() => {
+                window.print();
+            }, 250);
+        };
+        img.src = images[name];
+    }
 </script>
 </body>
 </html>
